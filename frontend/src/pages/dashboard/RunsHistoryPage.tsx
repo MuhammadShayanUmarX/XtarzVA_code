@@ -49,15 +49,14 @@ export default function RunsHistoryPage() {
  year: 'numeric'
  })
  
- // Determine yield based on active stages
- let runYield = 1
- if (engineData.commerce_creation) {
- runYield = 8
- } else if (engineData.product_sourcing) {
- runYield = 4
- } else if (engineData.competitor_intelligence) {
- runYield = 2
+ const AGENT_LABELS: Record<string, string> = {
+ product_intelligence: 'Product Discovery',
+ competitor_intelligence: 'Competitor Intel',
+ product_sourcing: 'Sourcing',
+ commerce_creation: 'Store Builder',
+ meta_ads_spy: 'Ad Creative',
  }
+ const agentLabel = AGENT_LABELS[run.agent || run.current_stage] || 'Agent Run'
  
  // Get margin
  let margin = 'TBD'
@@ -94,7 +93,7 @@ export default function RunsHistoryPage() {
  id: String(run.id),
  niche,
  date,
- yield: runYield,
+ agent: agentLabel,
  margin,
  score,
  status,
@@ -123,7 +122,7 @@ export default function RunsHistoryPage() {
  <h1 className="text-4xl font-black text-landing-primary tracking-tight">Intelligence Archive</h1>
  </div>
  <p className="text-lg text-landing-secondary font-medium leading-relaxed max-w-2xl">
- Chronological record of all autonomous market operations and campaign yield history.
+ Chronological record of all agent runs across Product Discovery, Intel, Sourcing, and Store Builder.
  </p>
  </div>
  
@@ -163,14 +162,14 @@ export default function RunsHistoryPage() {
  <div className="space-y-2">
  <h3 className="text-xl font-black text-landing-primary tracking-tight">Archive Empty</h3>
  <p className="text-sm text-landing-secondary leading-relaxed max-w-md">
- No autonomous market operations have been executed yet. Start your first scan to begin generating assets.
+ No agent runs yet. Start with Product Discovery to research a niche or product idea.
  </p>
  </div>
  <button 
- onClick={() => navigate('/dashboard/run/new')}
+ onClick={() => navigate('/dashboard/products')}
  className="cta-button h-12 px-8 rounded-xl font-bold text-sm"
  >
- Initialize First Scan
+ Start Product Discovery
  </button>
  </div>
  ) : (
@@ -212,8 +211,8 @@ export default function RunsHistoryPage() {
 
  <div className="grid grid-cols-2 gap-8 pt-4 border-t border-landing-divider">
  <div>
- <p className="text-[10px] font-black text-landing-muted tracking-tight mb-1">Market Yield</p>
- <p className="text-xl font-black text-landing-primary tabular-nums">{run.yield} <span className="text-xs text-landing-muted">Assets</span></p>
+ <p className="text-[10px] font-black text-landing-muted tracking-tight mb-1">Agent</p>
+ <p className="text-sm font-black text-landing-primary">{run.agent}</p>
  </div>
  <div>
  <p className="text-[10px] font-black text-landing-muted tracking-tight mb-1">Intelligence Score</p>
@@ -253,7 +252,7 @@ export default function RunsHistoryPage() {
  <tr className="text-[11px] font-black text-landing-muted tracking-tight text-left border-b border-landing-divider">
  <th className="p-8 pl-10">Operation Identity</th>
  <th className="p-8">Temporal Reference</th>
- <th className="p-8">Market Yield</th>
+ <th className="p-8">Agent</th>
  <th className="p-8">Intelligence Score</th>
  <th className="p-8 text-right pr-10">Protocol</th>
  </tr>
@@ -283,7 +282,7 @@ export default function RunsHistoryPage() {
  </div>
  </td>
  <td className="p-8">
- <span className="text-lg font-black text-landing-primary tabular-nums">{run.yield} <span className="text-xs text-landing-muted tracking-tight ml-1">Assets</span></span>
+ <span className="text-sm font-black text-landing-primary">{run.agent}</span>
  </td>
  <td className="p-8">
  <div className="flex items-center gap-4">

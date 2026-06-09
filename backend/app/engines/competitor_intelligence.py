@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from ..models.schemas import CompetitorIntelligenceOutput, ProductIntelligenceOutput
 from ..core.llm import call_with_fallback
 from ..core.tools import research_tools
@@ -30,22 +30,39 @@ class CompetitorIntelligenceEngine:
                 extracted.append({k: item.get(k, "") for k in keys if item.get(k)})
         return extracted
 
-    async def run(self, product_data: ProductIntelligenceOutput) -> CompetitorIntelligenceOutput:
+    async def run(
+        self,
+        product_data: ProductIntelligenceOutput,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> CompetitorIntelligenceOutput:
         product_name = product_data.product_name
+        context = context or {}
+        competitor_url = context.get("competitor_url", "").strip()
         logger.info(f"Starting Competitor Intel for: {product_name}")
 
         amazon_results = await research_tools.scrape_amazon_products(product_name, max_items=2)
         tiktok_shop_details = await research_tools.get_tiktok_shop_details(product_name)
 
         search_query = f"top shopify competitors for {product_name}"
-        web_search = await research_tools.search_web(search_query, max_results=2)
+        web_search = await research_tools.search_serp(search_query, max_results=2)
+        if not web_search:
+            web_search = await research_tools.search_web(search_query, max_results=2)
 
         competitor_audits = []
+        if competitor_url:
+            audit = await research_tools.audit_website(competitor_url)
+            lighthouse = await research_tools.run_geekflare_lighthouse(competitor_url)
+            competitor_audits.append({
+                "url": competitor_url,
+                "summary": research_tools._extract_markdown(audit)[:300],
+                "lighthouse": lighthouse,
+            })
+
         for result in web_search[:2]:
             url = result.get("url")
-            if url and "amazon" not in url:
+            if url and "amazon" not in url and url != competitor_url:
                 audit = await research_tools.audit_website(url)
-                audit_text = (audit.get("markdown", "") or "")[:200] if isinstance(audit, dict) else ""
+                audit_text = research_tools._extract_markdown(audit)[:200]
                 competitor_audits.append({"url": url, "summary": audit_text})
 
         # Build research summary for UI
@@ -111,9 +128,21 @@ class CompetitorIntelligenceEngine:
         if len(data_json) > max_data_chars:
             data_json = data_json[:max_data_chars]
 
+        brief_parts = []
+        if context.get("niche"):
+            brief_parts.append(f"Niche: {context['niche']}")
+        if context.get("target_market"):
+            brief_parts.append(f"Target market: {context['target_market']}")
+        if context.get("competitor_urls"):
+            brief_parts.append(f"Competitor URLs: {context['competitor_urls']}")
+        elif competitor_url:
+            brief_parts.append(f"Competitor URL: {competitor_url}")
+        brief = "\n".join(brief_parts)
+
         user_prompt = (
             f"PRODUCT:{product_name}\n"
-            f"DATA:{data_json}\n"
+            + (f"BRIEF:\n{brief}\n" if brief else "")
+            + f"DATA:{data_json}\n"
             "Return JSON with exactly: competitor_weaknesses, pricing_gaps, SEO_gaps, product_opportunities, market_saturation_score."
         )
 

@@ -27,7 +27,6 @@ const BlogPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.
 const CareersPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.CareersPage })))
 const ChangelogPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.ChangelogPage })))
 const RoadmapPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.RoadmapPage })))
-const NewRunPage = lazy(() => import('./pages/dashboard/NewRunPage'))
 const RunResultsPage = lazy(() => import('./pages/dashboard/RunResultsPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const AnalyticsPage = lazy(() => import('./pages/dashboard/AnalyticsPage'))
@@ -86,7 +85,7 @@ export default function App() {
           
           <Route element={<DashboardShell />}>
             <Route path="/dashboard" element={<ProtectedRoute><OverviewPage /></ProtectedRoute>} />
-            <Route path="/dashboard/run/new" element={<ProtectedRoute><NewRunPage /></ProtectedRoute>} />
+            <Route path="/dashboard/run/new" element={<Navigate to="/dashboard/products" replace />} />
             <Route path="/dashboard/runs/:runId" element={<ProtectedRoute><RunResultsPage /></ProtectedRoute>} />
             <Route path="/dashboard/runs" element={<ProtectedRoute><RunsHistoryPage /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

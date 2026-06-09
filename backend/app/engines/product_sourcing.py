@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from ..models.schemas import ProductSourcingOutput, ProductIntelligenceOutput, SupplierInfo
 from ..core.llm import call_with_fallback
 from ..core.tools import research_tools
@@ -30,7 +30,12 @@ class ProductSourcingEngine:
                 extracted.append({k: item.get(k, "") for k in keys if item.get(k)})
         return extracted
 
-    async def run(self, product_data: ProductIntelligenceOutput) -> ProductSourcingOutput:
+    async def run(
+        self,
+        product_data: ProductIntelligenceOutput,
+        initial_input: Optional[Dict[str, Any]] = None,
+    ) -> ProductSourcingOutput:
+        initial_input = initial_input or {}
         product_name = product_data.product_name
         product_category = product_data.product_category
         logger.info(f"Starting Sourcing for: {product_name}")
@@ -133,10 +138,20 @@ class ProductSourcingEngine:
         if len(data_json) > max_data_chars:
             data_json = data_json[:max_data_chars]
 
+        constraints = []
+        if initial_input.get("target_cost"):
+            constraints.append(f"Target unit cost: {initial_input['target_cost']}")
+        if initial_input.get("moq_preference"):
+            constraints.append(f"MOQ preference: {initial_input['moq_preference']}")
+        if initial_input.get("shipping_region"):
+            constraints.append(f"Ship to: {initial_input['shipping_region']}")
+        constraint_text = "\n".join(constraints)
+
         user_prompt = (
             f"Product:{product_name}\n"
             f"Category:{product_category}\n"
-            f"DATA:{data_json}\n"
+            + (f"CONSTRAINTS:\n{constraint_text}\n" if constraint_text else "")
+            + f"DATA:{data_json}\n"
             "TASK:Identify Best Sourcing Option. Return JSON."
         )
 

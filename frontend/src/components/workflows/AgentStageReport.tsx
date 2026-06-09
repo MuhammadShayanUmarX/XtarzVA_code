@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
  ShieldCheck, 
@@ -19,28 +20,75 @@ import {
  Activity,
  Star,
  Award,
- ExternalLink
+ ExternalLink,
+ Loader2
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { AgentStep } from '../../types/workflow'
 import { cn } from '../../lib/utils'
+import api from '../../lib/api'
+import toast from 'react-hot-toast'
 
 interface AgentStageReportProps {
  agent: AgentStep
  activeStep: number
  totalSteps: number
  onApprove: () => void
+ runId?: string | null
+ hideApprove?: boolean
  realOutput?: any
  researchData?: any[]
  fullEngineData?: any
 }
 
-export default function AgentStageReport({ agent, activeStep, totalSteps, onApprove, realOutput, researchData, fullEngineData }: AgentStageReportProps) {
- const [activeTab, setActiveTab] = useState<'copy' | 'marketing' | 'visuals'>('copy');
+export default function AgentStageReport({ agent, activeStep, totalSteps, onApprove, runId, hideApprove, realOutput, researchData, fullEngineData }: AgentStageReportProps) {
+ const navigate = useNavigate()
+ const [importing, setImporting] = useState<string | null>(null)
+ const [downloading, setDownloading] = useState(false)
+ const [activeTab, setActiveTab] = useState<'copy' | 'marketing' | 'visuals'>('copy')
+
+ const handleDownloadStore = async () => {
+  if (!runId) return
+  setDownloading(true)
+  try {
+   const res = await api.get(`/v2/runs/${runId}/store-export`, { responseType: 'blob' })
+   const disposition = res.headers['content-disposition'] || ''
+   const match = disposition.match(/filename="?([^"]+)"?/)
+   const filename = match?.[1] || `store-${runId.slice(0, 8)}.zip`
+   const url = URL.createObjectURL(res.data)
+   const a = document.createElement('a')
+   a.href = url
+   a.download = filename
+   a.click()
+   URL.revokeObjectURL(url)
+   toast.success('Store ZIP downloaded!')
+  } catch (err: any) {
+   toast.error(err.response?.data?.detail || 'Failed to download store ZIP')
+  } finally {
+   setDownloading(false)
+  }
+ }
+
+ const handleImport = async (targetStage: string) => {
+  if (!runId) return
+  setImporting(targetStage)
+  try {
+   const res = await api.post('/v2/runs/import', {
+    source_run_id: runId,
+    target_stage: targetStage,
+   })
+   toast.success(`Starting ${targetStage.replace(/_/g, ' ')}...`)
+   navigate(`/dashboard/workflow?run_id=${res.data.run_id}&standalone=true`)
+  } catch {
+   toast.error('Failed to import product')
+  } finally {
+   setImporting(null)
+  }
+ }
 
  // Extract real data if available, otherwise use mock defaults from the constant
- const stats = realOutput?.summary_stats || agent.report.stats;
- const details = realOutput?.reasoning_summary || agent.report.details;
+ const stats = realOutput?.summary_stats || agent.report?.stats || [];
+ const details = realOutput?.reasoning_summary || agent.report?.details || 'Analysis complete.';
 
  // Determine grid cols based on number of stats
  const gridCols = stats.length > 3 ? 'md:grid-cols-3' : `md:grid-cols-${stats.length}`;
@@ -82,7 +130,7 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  </div>
  </div>
  <span className="px-4 py-1.5 rounded-full bg-accent-emerald/10 text-accent-emerald text-[10px] font-black tracking-tight border border-accent-emerald/20 animate-pulse">
- Awaiting Approval
+ {hideApprove ? 'Complete' : 'Awaiting Approval'}
  </span>
  </div>
 
@@ -537,6 +585,27 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  <div className="p-8 rounded-3xl bg-white/[0.01] border border-landing-divider space-y-8">
  {activeTab === 'copy' && (
  <div className="space-y-8">
+ {(fullEngineData.commerce_creation.seo_meta_title || fullEngineData.commerce_creation.homepage_hero_headline) && (
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ {fullEngineData.commerce_creation.seo_meta_title && (
+ <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2">
+ <p className="text-[10px] font-black text-landing-muted tracking-tight">SEO Meta Title</p>
+ <p className="text-xs font-bold text-white">{fullEngineData.commerce_creation.seo_meta_title}</p>
+ {fullEngineData.commerce_creation.seo_meta_description && (
+ <p className="text-[10px] text-landing-muted leading-relaxed">{fullEngineData.commerce_creation.seo_meta_description}</p>
+ )}
+ </div>
+ )}
+ {fullEngineData.commerce_creation.homepage_hero_headline && (
+ <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2">
+ <p className="text-[10px] font-black text-landing-muted tracking-tight">Homepage Hero</p>
+ <p className="text-xs font-black text-white">{fullEngineData.commerce_creation.homepage_hero_headline}</p>
+ <p className="text-[10px] text-landing-muted">{fullEngineData.commerce_creation.homepage_hero_subheadline}</p>
+ </div>
+ )}
+ </div>
+ )}
+
  {/* Titles */}
  <div className="space-y-4">
  <p className="text-[10px] font-black text-landing-muted tracking-tight">SEO-Optimized Launch Titles</p>
@@ -832,8 +901,45 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  </div>
  )}
 
+ {/* Import actions for Product Discovery */}
+ {agent.id === 'product_intelligence' && runId && fullEngineData?.product_intelligence && (
+ <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-landing-divider">
+ <button
+  onClick={() => handleImport('competitor_intelligence')}
+  disabled={!!importing}
+  className="flex-1 h-14 px-6 rounded-2xl bg-accent-rose/10 border border-accent-rose/20 text-accent-rose font-black text-sm hover:bg-accent-rose/20 transition-all disabled:opacity-50"
+ >
+  {importing === 'competitor_intelligence' ? 'Importing...' : 'Import to Competitor Intel'}
+ </button>
+ <button
+  onClick={() => handleImport('product_sourcing')}
+  disabled={!!importing}
+  className="flex-1 h-14 px-6 rounded-2xl bg-accent-indigo/10 border border-accent-indigo/20 text-accent-indigo font-black text-sm hover:bg-accent-indigo/20 transition-all disabled:opacity-50"
+ >
+  {importing === 'product_sourcing' ? 'Importing...' : 'Import to Sourcing'}
+ </button>
+ </div>
+ )}
+
+ {agent.id === 'commerce_creation' && runId && fullEngineData?.commerce_creation && (
+ <div className="pt-6 border-t border-landing-divider">
+ <button
+  onClick={handleDownloadStore}
+  disabled={downloading}
+  className="w-full h-16 px-10 rounded-2xl bg-accent-violet hover:bg-accent-violet/90 text-white font-black text-base flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+ >
+  {downloading ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
+  {downloading ? 'Preparing ZIP...' : 'Download Store ZIP'}
+ </button>
+ <p className="text-[10px] text-landing-muted text-center mt-3">
+  Includes product.json, store pages, images, and Shopify import instructions.
+ </p>
+ </div>
+ )}
+
  {/* Action Buttons */}
  <div className="flex flex-col sm:flex-row items-center gap-6 pt-6 border-t border-landing-divider">
+ {!hideApprove && (
  <button 
  onClick={onApprove}
  id="approve-button"
@@ -845,6 +951,7 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  : `Approve & Proceed to ${activeStep < totalSteps - 1 ? 'Next Phase' : 'Dashboard'}`}
  <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform ml-2" />
  </button>
+ )}
  <button className="h-16 px-8 rounded-2xl bg-white/[0.03] border border-landing-divider text-landing-secondary font-bold hover:text-white transition-all w-full sm:w-auto">
  Review Raw Data
  </button>

@@ -28,7 +28,9 @@ export default function AgentStageRunning({ agent, progress, logs, scrollRef }: 
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-4">
  <div className="w-10 h-10 rounded-full border-4 border-landing-divider border-t-accent-primary animate-spin" />
- <span className="text-sm font-black text-white tracking-tight">Processing Market Data...</span>
+ <span className="text-sm font-black text-white tracking-tight">
+ {progress < 20 ? 'Connecting research APIs...' : progress < 60 ? 'Scanning TikTok, Reddit, Amazon & web...' : 'Analyzing with AI...'}
+ </span>
  </div>
  <span className="text-2xl font-black text-white tabular-nums">{progress}%</span>
  </div>

@@ -1,25 +1,34 @@
 import { useState } from 'react'
-import { Megaphone, Search, Filter, LayoutGrid, List, PlaySquare, ArrowRight, Loader2 } from 'lucide-react'
-import { cn } from '../../lib/utils'
+import { Megaphone, ArrowRight, Loader2, Target, Zap, DollarSign } from 'lucide-react'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
+const BUDGET_TIERS = ['Testing ($10-50/day)', 'Scaling ($50-200/day)', 'Aggressive ($200+/day)'] as const
+const AD_ANGLES = ['Problem/Solution', 'Social Proof', 'Before/After', 'Urgency/Scarcity', 'Lifestyle', 'Unboxing'] as const
+
 export default function MetaAdsPage() {
-  const [view, setView] = useState<'grid' | 'list'>('grid')
-  const [query, setQuery] = useState('')
+  const [productName, setProductName] = useState('')
+  const [targetAudience, setTargetAudience] = useState('')
+  const [adAngle, setAdAngle] = useState<string>(AD_ANGLES[0])
+  const [budgetTier, setBudgetTier] = useState<string>(BUDGET_TIERS[0])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
 
   const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!query.trim()) return
+    if (!productName.trim()) return
 
     setIsSubmitting(true)
     try {
       const res = await api.post('/v2/runs/standalone', {
         stage: 'meta_ads_spy',
-        initial_input: { query }
+        initial_input: {
+          query: productName.trim(),
+          target_audience: targetAudience.trim(),
+          ad_angle: adAngle,
+          budget_tier: budgetTier,
+        },
       })
       toast.success('Ad creative generation started!')
       navigate(`/dashboard/workflow?run_id=${res.data.run_id}&standalone=true`)
@@ -32,7 +41,6 @@ export default function MetaAdsPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-12 pb-32">
-      {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -42,94 +50,108 @@ export default function MetaAdsPage() {
             <h1 className="text-4xl font-black text-landing-primary tracking-tight">Meta Ad Creative</h1>
           </div>
           <p className="text-lg text-landing-secondary font-medium leading-relaxed max-w-2xl">
-            Generate high-converting ad creatives, hooks, and images optimized for the Facebook & Instagram network.
+            Generate high-converting ad creatives, hooks, and images for Facebook and Instagram — tuned to your audience and budget.
           </p>
         </div>
       </header>
 
-      {/* Input Section */}
       <section className="glass-panel p-8 md:p-12 rounded-[32px] border-landing-divider">
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-black text-white tracking-tight">Generate Ad Creatives for a Product</h2>
+            <h2 className="text-2xl font-black text-white tracking-tight">Campaign brief</h2>
+            <p className="text-sm text-landing-muted">Define your product, audience, and ad strategy before generation.</p>
           </div>
 
-          <form onSubmit={handleTrack} className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-accent-amber/20 to-accent-rose/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
-            <div className="relative flex items-center">
+          <form onSubmit={handleTrack} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-landing-muted tracking-tight">Product *</label>
               <input
                 type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
                 placeholder="e.g. Ridge Wallet, Posture Corrector..."
-                className="w-full h-16 bg-landing-bg border-2 border-landing-divider focus:border-accent-amber rounded-2xl pl-6 pr-44 text-lg text-white placeholder:text-landing-muted focus:outline-none transition-all font-medium"
+                className="w-full h-14 bg-landing-bg border-2 border-landing-divider focus:border-accent-amber rounded-2xl px-5 text-base text-white placeholder:text-landing-muted focus:outline-none transition-all font-medium"
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-landing-muted tracking-tight">Target audience</label>
+              <input
+                type="text"
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
+                placeholder="e.g. Men 25-40, fitness enthusiasts, urban professionals"
+                className="w-full h-12 bg-landing-bg border border-landing-divider focus:border-accent-amber/50 rounded-xl px-5 text-sm text-white placeholder:text-landing-muted focus:outline-none transition-all"
                 disabled={isSubmitting}
               />
-              <button 
-                type="submit"
-                disabled={!query.trim() || isSubmitting}
-                className="absolute right-2 top-2 bottom-2 px-6 bg-accent-amber hover:bg-accent-amber/90 text-brand-950 font-black text-sm rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
-              >
-                {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Generate Creatives'}
-                {!isSubmitting && <ArrowRight size={18} />}
-              </button>
             </div>
-          </form>
-        </div>
-      </section>
 
-      {/* Advanced Toolbar */}
-      <section className="flex flex-col lg:flex-row justify-between items-center gap-6 glass-panel p-4 rounded-[32px]">
-        <div className="relative w-full lg:w-[480px]">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-landing-muted w-5 h-5" />
-          <input 
-            placeholder="Search generated creatives..." 
-            className="w-full h-14 bg-landing-surface border border-landing-divider rounded-2xl pl-14 pr-6 text-sm text-white focus:outline-none focus:border-landing-accent transition-all font-medium" 
-          />
-        </div>
-        
-        <div className="flex items-center gap-4 w-full lg:w-auto">
-          <button className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-6 h-14 bg-landing-surface border border-landing-divider rounded-2xl text-sm font-black text-landing-secondary hover:text-landing-primary transition-all">
-            <Filter size={18} /> Filters
-          </button>
-          
-          <div className="h-8 w-px bg-landing-surface hidden lg:block mx-2" />
-          
-          <div className="flex bg-landing-surface p-1.5 rounded-2xl border border-landing-divider">
-            <button 
-              onClick={() => setView('grid')} 
-              className={cn(
-                "w-11 h-11 flex items-center justify-center rounded-xl transition-all", 
-                view === 'grid' ? "bg-landing-accent text-white" : "text-landing-muted hover:text-landing-secondary"
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-landing-muted tracking-tight">Ad angle</label>
+                <select
+                  value={adAngle}
+                  onChange={(e) => setAdAngle(e.target.value)}
+                  className="w-full h-12 bg-landing-bg border border-landing-divider focus:border-accent-amber/50 rounded-xl px-5 text-sm text-white focus:outline-none transition-all"
+                  disabled={isSubmitting}
+                >
+                  {AD_ANGLES.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-landing-muted tracking-tight">Budget tier</label>
+                <select
+                  value={budgetTier}
+                  onChange={(e) => setBudgetTier(e.target.value)}
+                  className="w-full h-12 bg-landing-bg border border-landing-divider focus:border-accent-amber/50 rounded-xl px-5 text-sm text-white focus:outline-none transition-all"
+                  disabled={isSubmitting}
+                >
+                  {BUDGET_TIERS.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!productName.trim() || isSubmitting}
+              className="w-full h-14 bg-accent-amber hover:bg-accent-amber/90 text-brand-950 font-black text-sm rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <LayoutGrid size={20} />
+              {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Generate Creatives'}
+              {!isSubmitting && <ArrowRight size={18} />}
             </button>
-            <button 
-              onClick={() => setView('list')} 
-              className={cn(
-                "w-11 h-11 flex items-center justify-center rounded-xl transition-all", 
-                view === 'list' ? "bg-landing-accent text-white" : "text-landing-muted hover:text-landing-secondary"
-              )}
-            >
-              <List size={20} />
-            </button>
+          </form>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-landing-divider/50">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-accent-amber">
+                <Target size={16} />
+                <span className="text-xs font-black tracking-tight">Audience-Targeted</span>
+              </div>
+              <p className="text-[10px] text-landing-muted leading-relaxed">Hooks and copy tailored to your specific buyer persona.</p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-accent-rose">
+                <Zap size={16} />
+                <span className="text-xs font-black tracking-tight">Angle-Driven</span>
+              </div>
+              <p className="text-[10px] text-landing-muted leading-relaxed">Creatives structured around your chosen persuasion angle.</p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-accent-cyan">
+                <DollarSign size={16} />
+                <span className="text-xs font-black tracking-tight">Budget-Aware</span>
+              </div>
+              <p className="text-[10px] text-landing-muted leading-relaxed">Strategy scales to your testing or scaling budget tier.</p>
+            </div>
           </div>
         </div>
       </section>
-
-      {/* Empty State */}
-      <div className="glass-panel p-16 flex flex-col items-center justify-center text-center space-y-6 border-landing-divider min-h-[40vh]">
-        <div className="w-16 h-16 rounded-3xl bg-landing-surface border border-landing-divider flex items-center justify-center text-landing-muted">
-          <PlaySquare size={32} />
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-xl font-black text-landing-primary tracking-tight">No Creatives Generated</h3>
-          <p className="text-sm text-landing-secondary leading-relaxed max-w-md mx-auto">
-            You haven't generated any Meta ad creatives yet. Enter a product name above to generate high-converting images and copy.
-          </p>
-        </div>
-      </div>
     </div>
   )
 }

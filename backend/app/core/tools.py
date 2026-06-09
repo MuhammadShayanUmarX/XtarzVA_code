@@ -1,4 +1,4 @@
-import os
+import asyncio
 import logging
 import urllib.parse
 import httpx
@@ -15,23 +15,172 @@ class ResearchTools:
         self.apify_client = ApifyClient(settings.APIFY_API_KEY) if settings.APIFY_API_KEY else None
         self.tavily_client = TavilyClient(api_key=settings.TAVILY_API_KEY) if settings.TAVILY_API_KEY else None
         self.firecrawl_app = FirecrawlApp(api_key=settings.FIRECRAWL_API_KEY) if settings.FIRECRAWL_API_KEY else None
-        self.http_client = httpx.AsyncClient(timeout=30.0)
+        self.http_client = httpx.AsyncClient(timeout=60.0)
         self.cj_access_token = None
 
-    async def search_web(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
-        """Perform a web search using Tavily."""
-        if not self.tavily_client:
-            logger.warning("Tavily API key not set. Skipping web search.")
+        integrations = {
+            "groq": bool(settings.GROQ_API_KEY),
+            "tavily": bool(self.tavily_client),
+            "apify": bool(self.apify_client),
+            "firecrawl": bool(self.firecrawl_app),
+            "serpapi": bool(settings.SERP_API_KEY or settings.SERPER_API_KEY),
+            "serper": bool(settings.SERPER_API_KEY or settings.SERP_API_KEY),
+            "geekflare": bool(settings.GEEKFLARE_API_KEY),
+            "cj_dropshipping": bool(settings.CJ_DROPSHIPPING_API),
+            "unsplash": bool(settings.ACCESS_TOKEN or settings.APPLICATION_AI),
+            "shopify": bool(settings.SHOPIFY_API_KEY and settings.SHOPIFY_API_SECRET),
+        }
+        logger.info(f"Research integrations: {integrations}")
+
+    @staticmethod
+    def _extract_markdown(scrape_result: Any) -> str:
+        if not scrape_result:
+            return ""
+        if isinstance(scrape_result, dict):
+            if scrape_result.get("markdown"):
+                return str(scrape_result["markdown"])
+            data = scrape_result.get("data")
+            if isinstance(data, dict) and data.get("markdown"):
+                return str(data["markdown"])
+            if scrape_result.get("content"):
+                return str(scrape_result["content"])[:2000]
+        return str(scrape_result)[:2000]
+
+    def _unsplash_access_key(self) -> str:
+        return settings.ACCESS_TOKEN or settings.APPLICATION_AI or ""
+
+    async def _run_apify_actor(self, actor_id: str, run_input: dict) -> List[Dict[str, Any]]:
+        """Run blocking Apify SDK calls in a thread pool."""
+        if not self.apify_client:
             return []
-        
+
+        def _execute() -> List[Dict[str, Any]]:
+            run = self.apify_client.actor(actor_id).call(run_input=run_input)
+            return list(self.apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+
+        return await asyncio.to_thread(_execute)
+
+    async def _search_serper(self, query: str, max_results: int, api_key: str) -> List[Dict[str, Any]]:
+        """Google search via Serper.dev (serper.dev — different from serpapi.com)."""
         try:
-            # Tavily's python client is synchronous, so we run it in a thread or just call it if it's fast
-            # For simplicity in this agentic flow, we'll call it directly
-            response = self.tavily_client.search(query=query, search_depth="advanced", max_results=max_results)
-            return response.get("results", [])
+            response = await self.http_client.post(
+                "https://google.serper.dev/search",
+                headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
+                json={"q": query, "num": max_results},
+            )
+            if response.status_code != 200:
+                logger.error(f"Serper search failed ({response.status_code}): {response.text[:200]}")
+                return []
+
+            organic = response.json().get("organic", [])
+            return [
+                {
+                    "title": item.get("title", ""),
+                    "url": item.get("link", ""),
+                    "content": item.get("snippet", ""),
+                }
+                for item in organic[:max_results]
+            ]
         except Exception as e:
-            logger.error(f"Tavily search failed: {str(e)}")
+            logger.error(f"Serper search failed: {e}")
             return []
+
+    async def search_serp(
+        self,
+        query: str,
+        max_results: int = 5,
+        engine: str = "google",
+    ) -> List[Dict[str, Any]]:
+        """Google search via Serper.dev or SerpAPI (serpapi.com)."""
+        if settings.SERPER_API_KEY:
+            return await self._search_serper(query, max_results, settings.SERPER_API_KEY)
+
+        if not settings.SERP_API_KEY:
+            logger.warning("No SerpAPI/Serper key set. Skipping Google search fallback.")
+            return []
+
+        try:
+            params = {
+                "engine": engine,
+                "q": query,
+                "api_key": settings.SERP_API_KEY,
+                "num": max_results,
+            }
+            response = await self.http_client.get(
+                "https://serpapi.com/search.json",
+                params=params,
+            )
+            if response.status_code == 401:
+                logger.warning(
+                    "SERP_API_KEY rejected by serpapi.com — trying Serper.dev instead "
+                    "(your key may be from serper.dev, not serpapi.com)."
+                )
+                return await self._search_serper(query, max_results, settings.SERP_API_KEY)
+
+            if response.status_code != 200:
+                logger.error(f"SerpAPI search failed ({response.status_code}): {response.text[:200]}")
+                return []
+
+            data = response.json()
+            organic = data.get("organic_results", [])
+            return [
+                {
+                    "title": item.get("title", ""),
+                    "url": item.get("link", ""),
+                    "content": item.get("snippet", ""),
+                }
+                for item in organic[:max_results]
+            ]
+        except Exception as e:
+            logger.error(f"SerpAPI search failed: {e}")
+            return []
+
+    async def run_geekflare_lighthouse(self, url: str) -> Dict[str, Any]:
+        """SEO / performance audit via Geekflare Lighthouse API."""
+        if not settings.GEEKFLARE_API_KEY:
+            logger.warning("Geekflare API key not set. Skipping Lighthouse audit.")
+            return {}
+
+        try:
+            response = await self.http_client.post(
+                "https://api.geekflare.com/lighthouse",
+                headers={
+                    "x-api-key": settings.GEEKFLARE_API_KEY,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "url": url,
+                    "device": "desktop",
+                    "parameters": ["--only-categories=seo,performance"],
+                },
+                timeout=90.0,
+            )
+            if response.status_code == 200:
+                return response.json()
+            logger.error(f"Geekflare Lighthouse failed ({response.status_code}): {response.text[:200]}")
+        except Exception as e:
+            logger.error(f"Geekflare Lighthouse error for {url}: {e}")
+        return {}
+
+    async def search_web(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+        """Perform a web search using Tavily, falling back to SerpAPI."""
+        if self.tavily_client:
+            try:
+                response = await asyncio.to_thread(
+                    self.tavily_client.search,
+                    query=query,
+                    search_depth="advanced",
+                    max_results=max_results,
+                )
+                results = response.get("results", [])
+                if results:
+                    return results
+            except Exception as e:
+                logger.error(f"Tavily search failed: {str(e)}")
+        else:
+            logger.warning("Tavily API key not set. Skipping Tavily web search.")
+
+        return await self.search_serp(query, max_results=max_results)
 
     async def search_tiktok_shop(self, query: str, max_items: int = 10) -> List[Dict[str, Any]]:
         """Search for products directly on TikTok Shop."""
@@ -47,12 +196,38 @@ class ResearchTools:
                 "country_code": "US",  # Added required field
                 "sortType": "BEST_SELLERS"
             }
-            run = self.apify_client.actor("pratikdani/tiktok-shop-search-scraper").call(run_input=run_input)
-            results = list(self.apify_client.dataset(run["defaultDatasetId"]).iterate_items())
-            return results
+            raw = await self._run_apify_actor("pratikdani/tiktok-shop-search-scraper", run_input)
+            return self._normalize_tiktok_items(raw, max_items)
         except Exception as e:
             logger.error(f"Apify TikTok Shop search failed: {str(e)}")
             return []
+
+    @staticmethod
+    def _normalize_tiktok_items(raw: List[Dict[str, Any]], max_items: int) -> List[Dict[str, Any]]:
+        """Flatten Apify TikTok Shop actor payloads into uniform product dicts."""
+        products: List[Dict[str, Any]] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            nested = item.get("data")
+            rows = nested if isinstance(nested, list) else [item]
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                title = row.get("title") or row.get("highlight") or row.get("product_name") or ""
+                if not title:
+                    continue
+                products.append({
+                    "title": title[:200],
+                    "avg_price": row.get("avg_price") or row.get("min_price") or "",
+                    "total_sales": row.get("total_sales") or row.get("lives_sales") or "",
+                    "reviews_count": row.get("reviews_count") or row.get("influencers_count") or "",
+                    "category": row.get("category") or row.get("categories") or "",
+                    "url": row.get("product_url") or row.get("url") or "",
+                })
+                if len(products) >= max_items:
+                    return products
+        return products
 
     async def get_tiktok_shop_details(self, query: str) -> List[Dict[str, Any]]:
         """Get deep product data and reviews from TikTok Shop."""
@@ -65,9 +240,7 @@ class ResearchTools:
                 "searchKeywords": [query],
                 "includeReviews": True
             }
-            run = self.apify_client.actor("devcake/tiktok-shop-data-scraper").call(run_input=run_input)
-            results = list(self.apify_client.dataset(run["defaultDatasetId"]).iterate_items())
-            return results
+            return await self._run_apify_actor("devcake/tiktok-shop-data-scraper", run_input)
         except Exception as e:
             logger.error(f"Apify TikTok Shop details failed: {str(e)}")
             return []
@@ -96,20 +269,23 @@ class ResearchTools:
                 "includeNSFW": False,
                 "proxy": { "useApifyProxy": True }
             }
-            run = self.apify_client.actor("trudax/reddit-scraper").call(run_input=run_input)
-            results = list(self.apify_client.dataset(run["defaultDatasetId"]).iterate_items())
-            return results
+            return await self._run_apify_actor("trudax/reddit-scraper", run_input)
         except Exception as e:
             logger.error(f"Apify deep Reddit search failed: {str(e)}")
             return []
 
     async def scrape_amazon_products(self, query: str, max_items: int = 5) -> List[Dict[str, Any]]:
-        """Scrape Amazon for competitor products and pricing using Tavily web search (free & reliable)."""
+        """Find Amazon listings via SerpAPI, falling back to Tavily site search."""
         try:
-            # Use Tavily site-specific search as a reliable free method
+            serp_results = await self.search_serp(
+                f"site:amazon.com {query}",
+                max_results=max_items,
+            )
+            if serp_results:
+                return serp_results
+
             search_query = f"site:amazon.com {query}"
-            results = await self.search_web(search_query, max_results=max_items)
-            return results
+            return await self.search_web(search_query, max_results=max_items)
         except Exception as e:
             logger.error(f"Amazon product search failed: {str(e)}")
             return []
@@ -140,9 +316,20 @@ class ResearchTools:
                 except TypeError:
                     result = self.firecrawl_app.scrape(url)
             
+            markdown = self._extract_markdown(result)
+            if markdown:
+                return {"markdown": markdown, "url": url, "source": "firecrawl"}
+
+            geekflare = await self.run_geekflare_lighthouse(url)
+            if geekflare:
+                return {"markdown": str(geekflare)[:2000], "url": url, "source": "geekflare", "lighthouse": geekflare}
+
             return result if result else {}
         except Exception as e:
             logger.error(f"Firecrawl audit failed for {url}: {str(e)}")
+            geekflare = await self.run_geekflare_lighthouse(url)
+            if geekflare:
+                return {"markdown": str(geekflare)[:2000], "url": url, "source": "geekflare", "lighthouse": geekflare}
             return {}
 
     async def search_alibaba(self, query: str, max_items: int = 3) -> List[Dict[str, Any]]:
@@ -190,11 +377,40 @@ class ResearchTools:
         encoded_prompt = urllib.parse.quote(prompt)
         return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
 
+    async def search_meta_ads(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+        """Research active Meta / Facebook ads for a niche via SerpAPI + Tavily."""
+        results: List[Dict[str, Any]] = []
+
+        serp_ads = await self.search_serp(
+            f"facebook ad library {query}",
+            max_results=max_results,
+        )
+        results.extend(serp_ads)
+
+        if self.tavily_client:
+            try:
+                tavily = await asyncio.to_thread(
+                    self.tavily_client.search,
+                    query=f"Meta Facebook ad creatives competitors {query}",
+                    search_depth="advanced",
+                    max_results=max_results,
+                )
+                for item in tavily.get("results", []):
+                    results.append({
+                        "title": item.get("title", ""),
+                        "url": item.get("url", ""),
+                        "content": item.get("content", ""),
+                    })
+            except Exception as e:
+                logger.error(f"Tavily Meta ads search failed: {e}")
+
+        return results[:max_results]
+
     async def search_unsplash_photos(self, query: str, max_items: int = 3) -> List[str]:
         """Search for high-resolution royalty-free photos on Unsplash."""
-        access_key = settings.ACCESS_TOKEN
+        access_key = self._unsplash_access_key()
         if not access_key:
-            logger.warning("Unsplash Access Token not configured. Skipping Unsplash search.")
+            logger.warning("Unsplash access key not configured (ACCESS_TOKEN or APPLICATION_AI). Skipping.")
             return []
             
         try:

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.runs import router as runs_router
+from app.api.agents import router as agents_router
 from app.api.auth import router as auth_router
 from app.api.contact import router as contact_router
 from app.api.stats import router as stats_router
@@ -57,6 +58,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/api/v2/auth", tags=["Auth"])
+app.include_router(agents_router, prefix="/api/v2/agents", tags=["Agents"])
 app.include_router(runs_router, prefix="/api/v2/runs", tags=["Runs"])
 app.include_router(contact_router, prefix="/api/v2/contact", tags=["Contact"])
 app.include_router(stats_router, prefix="/api/v2/stats", tags=["Stats"])

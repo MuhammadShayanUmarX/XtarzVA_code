@@ -7,6 +7,7 @@ import {
 import { cn } from '../../lib/utils'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
+import DiscoveredProductPicker from '../../components/dashboard/DiscoveredProductPicker'
 
 interface CompetitorRun {
   id: string
@@ -17,8 +18,9 @@ interface CompetitorRun {
 }
 
 export default function InsightsPage() {
-  const [query, setQuery] = useState('')
-  const [competitorUrl, setCompetitorUrl] = useState('')
+  const [productNiche, setProductNiche] = useState('')
+  const [targetMarket, setTargetMarket] = useState('')
+  const [competitorUrls, setCompetitorUrls] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [previousRuns, setPreviousRuns] = useState<CompetitorRun[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
@@ -29,6 +31,7 @@ export default function InsightsPage() {
       .then(res => {
         const runs = res.data
           .filter((r: any) =>
+            r.agent === 'competitor_intelligence' ||
             r.current_stage === 'competitor_intelligence' ||
             r.engine_data?.competitor_intelligence
           )
@@ -45,19 +48,25 @@ export default function InsightsPage() {
       .finally(() => setLoadingHistory(false))
   }, [])
 
+  const buildInitialInput = () => ({
+    query: productNiche.trim(),
+    niche: productNiche.trim(),
+    ...(targetMarket.trim() && { target_market: targetMarket.trim() }),
+    ...(competitorUrls.trim() && {
+      competitor_urls: competitorUrls.trim(),
+      competitor_url: competitorUrls.trim().split(/[\n,]/)[0].trim(),
+    }),
+  })
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!query.trim()) return
+    if (!productNiche.trim()) return
 
     setIsSubmitting(true)
     try {
-      const initial_input: Record<string, string> = { query: query.trim() }
-      if (competitorUrl.trim()) {
-        initial_input.competitor_url = competitorUrl.trim()
-      }
       const res = await api.post('/v2/runs/standalone', {
         stage: 'competitor_intelligence',
-        initial_input,
+        initial_input: buildInitialInput(),
       })
       toast.success('Competitor research started!')
       navigate(`/dashboard/workflow?run_id=${res.data.run_id}&standalone=true`)
@@ -79,7 +88,7 @@ export default function InsightsPage() {
             <h1 className="text-4xl font-black text-landing-primary tracking-tight">Competitor Intel</h1>
           </div>
           <p className="text-lg text-landing-secondary font-medium leading-relaxed max-w-2xl">
-            See what your competitors are doing wrong — pricing gaps, weak points, and opportunities you can exploit.
+            Map pricing gaps, weaknesses, and market saturation for your niche — like a Shopify growth consultant would.
           </p>
         </div>
       </header>
@@ -90,39 +99,55 @@ export default function InsightsPage() {
             <div className="w-16 h-16 rounded-full bg-accent-violet/10 border border-accent-violet/20 flex items-center justify-center text-accent-violet mx-auto">
               <Target size={32} />
             </div>
-            <h2 className="text-2xl font-black text-white tracking-tight">What competitor do you want to analyze?</h2>
+            <h2 className="text-2xl font-black text-white tracking-tight">Define your competitive landscape</h2>
           </div>
 
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-accent-violet/20 to-accent-rose/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000" />
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="e.g. Ergonomic pet travel gear, Portable blender..."
-                  className="w-full h-16 bg-landing-bg border-2 border-landing-divider focus:border-accent-violet rounded-2xl pl-6 pr-40 text-lg text-white placeholder:text-landing-muted focus:outline-none transition-all font-medium"
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="submit"
-                  disabled={!query.trim() || isSubmitting}
-                  className="absolute right-2 top-2 bottom-2 px-6 bg-accent-violet hover:bg-accent-violet/90 text-white font-black text-sm rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Analyze'}
-                  {!isSubmitting && <ArrowRight size={18} />}
-                </button>
-              </div>
+          <form onSubmit={handleSearch} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-landing-muted tracking-tight">Product / niche *</label>
+              <input
+                type="text"
+                value={productNiche}
+                onChange={(e) => setProductNiche(e.target.value)}
+                placeholder="e.g. Ergonomic pet travel gear, Portable blender..."
+                className="w-full h-14 bg-landing-bg border-2 border-landing-divider focus:border-accent-violet rounded-2xl px-5 text-base text-white placeholder:text-landing-muted focus:outline-none transition-all font-medium"
+                disabled={isSubmitting}
+                required
+              />
             </div>
-            <input
-              type="url"
-              value={competitorUrl}
-              onChange={(e) => setCompetitorUrl(e.target.value)}
-              placeholder="Optional: competitor store URL (https://...)"
-              className="w-full h-12 bg-landing-bg border border-landing-divider focus:border-accent-violet/50 rounded-xl px-5 text-sm text-white placeholder:text-landing-muted focus:outline-none transition-all"
-              disabled={isSubmitting}
-            />
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-landing-muted tracking-tight">Target market</label>
+              <input
+                type="text"
+                value={targetMarket}
+                onChange={(e) => setTargetMarket(e.target.value)}
+                placeholder="e.g. US millennials, pet owners, $50-150 AOV"
+                className="w-full h-12 bg-landing-bg border border-landing-divider focus:border-accent-violet/50 rounded-xl px-5 text-sm text-white placeholder:text-landing-muted focus:outline-none transition-all"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-landing-muted tracking-tight">Competitor URLs (optional)</label>
+              <textarea
+                value={competitorUrls}
+                onChange={(e) => setCompetitorUrls(e.target.value)}
+                placeholder="One URL per line, e.g. https://competitor.myshopify.com"
+                rows={2}
+                className="w-full bg-landing-bg border border-landing-divider focus:border-accent-violet/50 rounded-xl px-5 py-3 text-sm text-white placeholder:text-landing-muted focus:outline-none transition-all resize-none"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={!productNiche.trim() || isSubmitting}
+              className="w-full h-14 bg-accent-violet hover:bg-accent-violet/90 text-white font-black text-sm rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Analyze Competitors'}
+              {!isSubmitting && <ArrowRight size={18} />}
+            </button>
           </form>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-landing-divider/50">
@@ -150,6 +175,12 @@ export default function InsightsPage() {
           </div>
         </div>
       </section>
+
+      <DiscoveredProductPicker
+        targetStage="competitor_intelligence"
+        description="Import a validated product from Product Discovery for higher-quality competitor analysis."
+        extraInitialInput={buildInitialInput()}
+      />
 
       <section className="space-y-6">
         <h3 className="text-lg font-black text-landing-primary tracking-tight">Previous Research</h3>

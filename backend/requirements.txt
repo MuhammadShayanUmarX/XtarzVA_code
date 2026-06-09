@@ -1,30 +1,37 @@
-# Web framework
-fastapi
-uvicorn[standard]
-python-multipart
-sse-starlette
+# XtarzVA Backend — Python 3.10+ required
+# Install: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 
-# Database
-sqlalchemy[asyncio]
-aiosqlite
+# --- Web framework ---
+fastapi>=0.110.0,<1.0
+uvicorn[standard]>=0.30.0,<1.0
+python-multipart>=0.0.9
+sse-starlette>=2.1.0,<4.0
 
-# Auth
-python-jose[cryptography]
-passlib[bcrypt]
-bcrypt<4.1.0
-pydantic[email]
-pydantic-settings
+# --- Database ---
+sqlalchemy[asyncio]>=2.0.25,<3.0
+aiosqlite>=0.19.0
+greenlet>=3.0.0
 
-# HTTP & research tools
-httpx
-apify-client
-tavily-python
-firecrawl-py
+# --- Auth & validation ---
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=3.2.0,<4.1.0
+pydantic[email]>=2.5.0,<3.0
+pydantic-settings>=2.1.0
+email-validator>=2.0.0
 
-# LLM
-groq
+# --- HTTP & research APIs ---
+httpx>=0.27.0
+apify-client>=1.6.0
+tavily-python>=0.3.0
+firecrawl-py>=1.0.0
 
-# Utilities
-python-dotenv
-pillow
-ngrok
+# --- LLM & agents (LangChain + Groq) ---
+langchain>=0.3.0,<2.0
+langchain-core>=0.3.0,<2.0
+langchain-groq>=0.2.0,<2.0
+
+# --- Utilities ---
+python-dotenv>=1.0.0
+pillow>=10.0.0
+ngrok>=1.0.0

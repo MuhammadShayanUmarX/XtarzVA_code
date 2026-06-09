@@ -1,17 +1,26 @@
 import logging
 import asyncio
+import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any, List
+
 from ..models.schemas import (
-    WorkflowState, EngineStage,
-    ProductIntelligenceOutput, CompetitorIntelligenceOutput,
-    ProductSourcingOutput, CommerceCreationOutput, SupplierInfo,
+    WorkflowState,
+    EngineStage,
+    ProductIntelligenceOutput,
+    CompetitorIntelligenceOutput,
+    ProductSourcingOutput,
+    CommerceCreationOutput,
+    SupplierInfo,
 )
 from ..models.models import (
-    StageIntelligenceData, StageCompetitorData, StageSourcingData,
-    StageCommerceData, StageResearchSource, Run,
+    StageIntelligenceData,
+    StageCompetitorData,
+    StageSourcingData,
+    StageCommerceData,
+    StageResearchSource,
+    Run,
 )
-import uuid
 from ..engines.product_intelligence import ProductIntelligenceEngine
 from ..engines.competitor_intelligence import CompetitorIntelligenceEngine
 from ..engines.product_sourcing import ProductSourcingEngine
@@ -28,8 +37,52 @@ STAGE_LABELS = {
     EngineStage.META_ADS_SPY.value: "Ad Creative",
 }
 
+IMPORTABLE_AGENTS = {
+    EngineStage.COMPETITOR_INTELLIGENCE.value,
+    EngineStage.PRODUCT_SOURCING.value,
+}
 
-class Orchestrator:
+STAGE_PREREQUISITES = {
+    EngineStage.COMPETITOR_INTELLIGENCE.value: [EngineStage.PRODUCT_INTELLIGENCE.value],
+    EngineStage.PRODUCT_SOURCING.value: [EngineStage.PRODUCT_INTELLIGENCE.value],
+    EngineStage.COMMERCE_CREATION.value: [
+        EngineStage.PRODUCT_INTELLIGENCE.value,
+        EngineStage.COMPETITOR_INTELLIGENCE.value,
+        EngineStage.PRODUCT_SOURCING.value,
+    ],
+    EngineStage.META_ADS_SPY.value: [EngineStage.PRODUCT_INTELLIGENCE.value],
+}
+
+STAGE_EXECUTORS = {
+    EngineStage.PRODUCT_INTELLIGENCE.value: "_execute_product_intelligence",
+    EngineStage.COMPETITOR_INTELLIGENCE.value: "_execute_competitor_intelligence",
+    EngineStage.PRODUCT_SOURCING.value: "_execute_product_sourcing",
+    EngineStage.COMMERCE_CREATION.value: "_execute_commerce_creation",
+    EngineStage.META_ADS_SPY.value: "_execute_meta_ads_spy",
+}
+
+
+class AgentRunner:
+    """Runs a single agent stage independently — no pipeline chaining."""
+
+    def __init__(self, run_id: str, db: Optional[Any] = None):
+        self.run_id = run_id
+        self.db = db
+        self._consumers: List[asyncio.Queue] = []
+        self.lock = asyncio.Lock()
+        self.state = WorkflowState(
+            status="stopped",
+            current_stage="",
+            pending_approval=False,
+            next_action="Start agent",
+            engine_data={},
+        )
+        self.product_engine = ProductIntelligenceEngine()
+        self.competitor_engine = CompetitorIntelligenceEngine()
+        self.sourcing_engine = ProductSourcingEngine()
+        self.creation_engine = CommerceCreationEngine()
+        self.meta_ads_engine = MetaAdsSpyEngine()
+
     async def _broadcast(self, event: Dict[str, Any]):
         for consumer in self._consumers:
             try:
@@ -75,26 +128,8 @@ class Orchestrator:
     async def broadcast_state_update(self):
         await self.stream_state_update()
 
-    def __init__(self, run_id: str, db: Optional[Any] = None):
-        self.run_id = run_id
-        self.db = db
-        self._consumers: List[asyncio.Queue] = []
-        self.lock = asyncio.Lock()
-        self.state = WorkflowState(
-            status="stopped",
-            current_stage="",
-            pending_approval=False,
-            next_action="Start workflow",
-            engine_data={},
-        )
-        self.product_engine = ProductIntelligenceEngine()
-        self.competitor_engine = CompetitorIntelligenceEngine()
-        self.sourcing_engine = ProductSourcingEngine()
-        self.creation_engine = CommerceCreationEngine()
-        self.meta_ads_engine = MetaAdsSpyEngine()
-
     @classmethod
-    async def from_db(cls, run_id: str, db: Any) -> "Orchestrator":
+    async def from_db(cls, run_id: str, db: Any) -> "AgentRunner":
         from sqlalchemy import select
 
         uid = uuid.UUID(run_id) if isinstance(run_id, str) else run_id
@@ -110,7 +145,7 @@ class Orchestrator:
             status=db_run.status,
             current_stage=db_run.current_stage or "",
             pending_approval=db_run.pending_approval,
-            next_action="Resume workflow",
+            next_action="View results",
             engine_data=db_run.engine_data or {},
         )
         return instance
@@ -133,130 +168,102 @@ class Orchestrator:
 
         await self.stream_state_update()
 
-    async def start_workflow(self, initial_input: Dict[str, Any]):
-        self.state.status = "running"
-        self.state.engine_data["initial_input"] = initial_input
-        await self._update_db_state()
-        await self.run_next_stage()
+    @staticmethod
+    def import_prerequisites(target_stage: str, source_engine_data: Dict[str, Any]) -> Dict[str, Any]:
+        imported: Dict[str, Any] = {}
+        for prereq in STAGE_PREREQUISITES.get(target_stage, []):
+            if prereq in source_engine_data:
+                imported[prereq] = source_engine_data[prereq]
+                research_key = f"{prereq}_research"
+                if research_key in source_engine_data:
+                    imported[research_key] = source_engine_data[research_key]
+        return imported
 
-    async def start_standalone_stage(self, stage: str, input_data: Dict[str, Any]):
+    @staticmethod
+    def get_discovered_product(engine_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        if engine_data.get("selected_product"):
+            return engine_data["selected_product"]
+        pi = engine_data.get(EngineStage.PRODUCT_INTELLIGENCE.value)
+        if isinstance(pi, dict):
+            return pi
+        return None
+
+    async def select_product(self, product: ProductIntelligenceOutput):
+        stage = EngineStage.PRODUCT_INTELLIGENCE.value
+        self.state.engine_data[stage] = product.model_dump()
+        self.state.engine_data["selected_product"] = product.model_dump()
+        await self._update_db_state()
+        return {"status": "product_selected", "product_name": product.product_name}
+
+    def _create_stub_product(self, query: str) -> ProductIntelligenceOutput:
+        return ProductIntelligenceOutput(
+            product_name=query,
+            product_category="Uncategorized",
+            trend_score=50,
+            demand_score=50,
+            competition_score=50,
+            estimated_margin=30.0,
+            risk_level="medium",
+            evidence_sources=[],
+            reasoning=f"Manual product entry for: {query}",
+        )
+
+    async def start_agent(
+        self,
+        stage: str,
+        input_data: Dict[str, Any],
+        source_engine_data: Optional[Dict[str, Any]] = None,
+    ):
         self.state.status = "running"
         self.state.current_stage = stage
         self.state.engine_data["initial_input"] = input_data
 
-        query = input_data.get("query", "Unknown Product")
+        if source_engine_data:
+            imported = self.import_prerequisites(stage, source_engine_data)
+            self.state.engine_data.update(imported)
+            product = self.get_discovered_product(source_engine_data)
+            if product:
+                self.state.engine_data["selected_product"] = product
+                if EngineStage.PRODUCT_INTELLIGENCE.value not in self.state.engine_data:
+                    self.state.engine_data[EngineStage.PRODUCT_INTELLIGENCE.value] = product
 
-        if stage == EngineStage.PRODUCT_SOURCING.value:
-            self.state.engine_data[EngineStage.PRODUCT_INTELLIGENCE.value] = ProductIntelligenceOutput(
-                product_name=query,
-                product_category=input_data.get("category", "General"),
-                trend_score=85, demand_score=85, competition_score=50,
-                estimated_margin=40.0, risk_level="Medium",
-                evidence_sources=[], reasoning="Standalone sourcing run.",
-            )
-            await self._update_db_state()
-            await self._execute_product_sourcing()
+        product_stage = EngineStage.PRODUCT_INTELLIGENCE.value
+        if stage != product_stage and product_stage not in self.state.engine_data:
+            query = input_data.get("query") or input_data.get("product_name") or "Unknown Product"
+            stub = self._create_stub_product(query)
+            self.state.engine_data[product_stage] = stub.model_dump()
+            self.state.engine_data["selected_product"] = stub.model_dump()
 
-        elif stage == EngineStage.COMMERCE_CREATION.value:
-            self.state.engine_data[EngineStage.PRODUCT_INTELLIGENCE.value] = ProductIntelligenceOutput(
-                product_name=query, product_category="General",
-                trend_score=85, demand_score=85, competition_score=50,
-                estimated_margin=40.0, risk_level="Medium",
-                evidence_sources=[], reasoning="",
-            )
-            self.state.engine_data[EngineStage.COMPETITOR_INTELLIGENCE.value] = CompetitorIntelligenceOutput(
-                market_saturation_score=50,
-                competitor_weaknesses=["Generic positioning"],
-                pricing_gaps=[], SEO_gaps=[], product_opportunities=["Branding"],
-            )
-            self.state.engine_data[EngineStage.PRODUCT_SOURCING.value] = ProductSourcingOutput(
-                suppliers=[],
-                best_option=SupplierInfo(
-                    supplier_name="N/A", platform="N/A", price_per_unit=0,
-                    moq=1, shipping_time="N/A", supplier_rating=0, product_url="",
-                ),
-                profit_margin_estimate=0, sourcing_risk_level="Low", reasoning="",
-            )
-            await self._update_db_state()
-            await self._execute_commerce_creation()
-
-        elif stage == EngineStage.PRODUCT_INTELLIGENCE.value:
-            await self._update_db_state()
-            await self._execute_product_intelligence()
-
-        elif stage == EngineStage.COMPETITOR_INTELLIGENCE.value:
-            self.state.engine_data[EngineStage.PRODUCT_INTELLIGENCE.value] = ProductIntelligenceOutput(
-                product_name=query, product_category="General",
-                trend_score=85, demand_score=85, competition_score=50,
-                estimated_margin=40.0, risk_level="Low",
-                evidence_sources=[], reasoning="",
-            )
-            await self._update_db_state()
-            await self._execute_competitor_intelligence()
-
-        elif stage == EngineStage.META_ADS_SPY.value:
-            await self._update_db_state()
-            await self._execute_meta_ads_spy()
-
-        if self.state.status != "failed":
-            self.state.status = "completed"
-            self.state.pending_approval = False
-            self.state.next_action = "Completed"
-            label = STAGE_LABELS.get(stage, stage)
-            await self.log_and_stream(f"{label} completed successfully.", stage=stage)
         await self._update_db_state()
 
-    async def run_next_stage(self):
-        async with self.lock:
-            if self.state.status != "running":
-                return
+        executor_name = STAGE_EXECUTORS.get(stage)
+        if not executor_name:
+            raise ValueError(f"Unknown agent stage: {stage}")
 
+        async with self.lock:
             try:
-                if self.state.current_stage == "":
-                    await self._execute_product_intelligence()
-                elif self.state.current_stage == EngineStage.PRODUCT_INTELLIGENCE.value:
-                    await self._execute_competitor_intelligence()
-                elif self.state.current_stage == EngineStage.COMPETITOR_INTELLIGENCE.value:
-                    await self._execute_product_sourcing()
-                elif self.state.current_stage == EngineStage.PRODUCT_SOURCING.value:
-                    await self._execute_commerce_creation()
-                elif self.state.current_stage == EngineStage.COMMERCE_CREATION.value:
-                    self.state.status = "completed"
-                    self.state.pending_approval = False
-                    self.state.next_action = "Completed"
-                    await self.log_and_stream(
-                        "Full workflow completed. All assets are ready.",
-                        stage=EngineStage.COMMERCE_CREATION.value,
-                    )
-                    await self._update_db_state()
+                await getattr(self, executor_name)()
             except Exception as e:
                 self.state.status = "failed"
                 self.state.engine_data["last_error"] = str(e)
-                await self.log_and_stream(f"Workflow failed: {str(e)}", level="error")
+                await self.log_and_stream(f"Agent failed: {str(e)}", level="error", stage=stage)
                 await self._update_db_state()
+                return
 
-    async def approve_stage(self):
-        if not self.state.pending_approval:
-            return {"error": "No pending approval"}
+        if self.state.status == "failed":
+            return
 
+        label = STAGE_LABELS.get(stage, stage)
+        self.state.status = "completed"
         self.state.pending_approval = False
-        self.state.status = "running"
+        self.state.next_action = "Completed"
+        await self.log_and_stream(f"{label} completed successfully.", stage=stage)
         await self._update_db_state()
-        await self.run_next_stage()
-        return {"status": "Approved, proceeding to next stage"}
 
     async def pause_workflow(self):
         self.state.status = "paused"
         await self._update_db_state()
         return {"status": "Paused"}
-
-    async def resume_workflow(self):
-        self.state.status = "running"
-        await self._update_db_state()
-        if self.state.pending_approval:
-            return {"status": "Resumed, waiting for approval"}
-        await self.run_next_stage()
-        return {"status": "Resumed"}
 
     async def stop_workflow(self):
         self.state.status = "stopped"
@@ -289,23 +296,64 @@ class Orchestrator:
             return model_cls.model_validate(data)
         return data
 
+    def _stub_competitor_data(self, product: ProductIntelligenceOutput) -> CompetitorIntelligenceOutput:
+        return CompetitorIntelligenceOutput(
+            competitor_weaknesses=["Limited differentiation in current market"],
+            pricing_gaps=["Mid-tier pricing opportunity"],
+            SEO_gaps=["Long-tail keyword gaps"],
+            product_opportunities=[f"Position {product.product_name} with stronger value props"],
+            market_saturation_score=min(product.competition_score, 100),
+        )
+
+    def _stub_sourcing_data(self, product: ProductIntelligenceOutput) -> ProductSourcingOutput:
+        stub_supplier = SupplierInfo(
+            supplier_name="TBD Supplier",
+            platform="AliExpress",
+            price_per_unit=10.0,
+            moq=1,
+            shipping_time="10-15 days",
+            supplier_rating=4.5,
+            product_url="",
+        )
+        return ProductSourcingOutput(
+            suppliers=[stub_supplier],
+            best_option=stub_supplier,
+            profit_margin_estimate=product.estimated_margin,
+            sourcing_risk_level=product.risk_level,
+            reasoning="Stub sourcing data — run Sourcing Agent for supplier matches.",
+        )
+
     async def _execute_product_intelligence(self):
         stage = EngineStage.PRODUCT_INTELLIGENCE.value
         label = STAGE_LABELS[stage]
-        self.state.current_stage = stage
-        await self._update_db_state()
-
         query = self.state.engine_data["initial_input"].get("query", "")
-        await self.log_and_stream(f"Starting {label} for: {query}", stage=stage)
+        await self.log_and_stream(
+            f"Starting {label} for: {query}",
+            stage=stage,
+            metadata={"agent_id": stage, "status": "running", "progress_pct": 5},
+        )
+
+        async def on_progress(message: str, pct: int):
+            await self.log_and_stream(
+                message,
+                stage=stage,
+                metadata={"agent_id": stage, "status": "running", "progress_pct": pct},
+            )
 
         try:
-            result = await self.product_engine.run(self.state.engine_data.get("initial_input"))
-            self.state.engine_data[stage] = result
+            result = await self.product_engine.run(
+                self.state.engine_data.get("initial_input"),
+                run_id=self.run_id,
+                on_progress=on_progress,
+            )
+            self.state.engine_data[stage] = result.model_dump()
+            self.state.engine_data["selected_product"] = result.model_dump()
             self.state.engine_data[f"{stage}_research"] = self.product_engine.research_summary
-            self.state.pending_approval = True
-            self.state.status = "paused"
-            self.state.next_action = "Review product research"
-            await self.log_and_stream(f"{label} complete. Review results to continue.", stage=stage)
+            await self.log_and_stream(
+                f"{label} complete: {result.product_name}",
+                stage=stage,
+                metadata={"agent_id": stage, "status": "done", "progress_pct": 100},
+            )
 
             if self.db:
                 try:
@@ -328,26 +376,22 @@ class Orchestrator:
         except Exception as e:
             await self.log_and_stream(f"{label} failed: {str(e)}", level="error", stage=stage)
             self.state.status = "failed"
-
-        await self._update_db_state()
+            await self._update_db_state()
 
     async def _execute_competitor_intelligence(self):
         stage = EngineStage.COMPETITOR_INTELLIGENCE.value
         label = STAGE_LABELS[stage]
-        self.state.current_stage = stage
-        await self._update_db_state()
-
         product_data = self._get_stage_data(EngineStage.PRODUCT_INTELLIGENCE.value, ProductIntelligenceOutput)
         await self.log_and_stream(f"Starting {label} for: {product_data.product_name}", stage=stage)
 
         try:
-            result = await self.competitor_engine.run(product_data)
-            self.state.engine_data[stage] = result
+            result = await self.competitor_engine.run(
+                product_data,
+                self.state.engine_data.get("initial_input", {}),
+            )
+            self.state.engine_data[stage] = result.model_dump()
             self.state.engine_data[f"{stage}_research"] = self.competitor_engine.research_summary
-            self.state.pending_approval = True
-            self.state.status = "paused"
-            self.state.next_action = "Review competitor analysis"
-            await self.log_and_stream(f"{label} complete. Review insights to continue.", stage=stage)
+            await self.log_and_stream(f"{label} complete.", stage=stage)
 
             if self.db:
                 try:
@@ -367,26 +411,22 @@ class Orchestrator:
         except Exception as e:
             await self.log_and_stream(f"{label} failed: {str(e)}", level="error", stage=stage)
             self.state.status = "failed"
-
-        await self._update_db_state()
+            await self._update_db_state()
 
     async def _execute_product_sourcing(self):
         stage = EngineStage.PRODUCT_SOURCING.value
         label = STAGE_LABELS[stage]
-        self.state.current_stage = stage
-        await self._update_db_state()
-
         product_data = self._get_stage_data(EngineStage.PRODUCT_INTELLIGENCE.value, ProductIntelligenceOutput)
         await self.log_and_stream(f"Starting {label} for: {product_data.product_name}", stage=stage)
 
         try:
-            result = await self.sourcing_engine.run(product_data)
-            self.state.engine_data[stage] = result
+            result = await self.sourcing_engine.run(
+                product_data,
+                self.state.engine_data.get("initial_input", {}),
+            )
+            self.state.engine_data[stage] = result.model_dump()
             self.state.engine_data[f"{stage}_research"] = self.sourcing_engine.research_summary
-            self.state.pending_approval = True
-            self.state.status = "paused"
-            self.state.next_action = "Review supplier options"
-            await self.log_and_stream(f"{label} complete. Review suppliers to continue.", stage=stage)
+            await self.log_and_stream(f"{label} complete.", stage=stage)
 
             if self.db:
                 try:
@@ -409,28 +449,35 @@ class Orchestrator:
         except Exception as e:
             await self.log_and_stream(f"{label} failed: {str(e)}", level="error", stage=stage)
             self.state.status = "failed"
-
-        await self._update_db_state()
+            await self._update_db_state()
 
     async def _execute_commerce_creation(self):
         stage = EngineStage.COMMERCE_CREATION.value
         label = STAGE_LABELS[stage]
-        self.state.current_stage = stage
-        await self._update_db_state()
-
         product_data = self._get_stage_data(EngineStage.PRODUCT_INTELLIGENCE.value, ProductIntelligenceOutput)
-        competitor_data = self._get_stage_data(EngineStage.COMPETITOR_INTELLIGENCE.value, CompetitorIntelligenceOutput)
-        sourcing_data = self._get_stage_data(EngineStage.PRODUCT_SOURCING.value, ProductSourcingOutput)
+
+        competitor_data = self.state.engine_data.get(EngineStage.COMPETITOR_INTELLIGENCE.value)
+        sourcing_data = self.state.engine_data.get(EngineStage.PRODUCT_SOURCING.value)
+        if competitor_data:
+            competitor_data = CompetitorIntelligenceOutput.model_validate(competitor_data)
+        else:
+            competitor_data = self._stub_competitor_data(product_data)
+        if sourcing_data:
+            sourcing_data = ProductSourcingOutput.model_validate(sourcing_data)
+        else:
+            sourcing_data = self._stub_sourcing_data(product_data)
 
         await self.log_and_stream(f"Starting {label} for: {product_data.product_name}", stage=stage)
 
         try:
-            result = await self.creation_engine.run(product_data, competitor_data, sourcing_data)
-            self.state.engine_data[stage] = result
-            self.state.pending_approval = True
-            self.state.status = "paused"
-            self.state.next_action = "Review store content"
-            await self.log_and_stream(f"{label} complete. Review generated content.", stage=stage)
+            result = await self.creation_engine.run(
+                product_data,
+                competitor_data,
+                sourcing_data,
+                self.state.engine_data.get("initial_input", {}),
+            )
+            self.state.engine_data[stage] = result.model_dump()
+            await self.log_and_stream(f"{label} complete.", stage=stage)
 
             if self.db:
                 try:
@@ -450,27 +497,33 @@ class Orchestrator:
         except Exception as e:
             await self.log_and_stream(f"{label} failed: {str(e)}", level="error", stage=stage)
             self.state.status = "failed"
-
-        await self._update_db_state()
+            await self._update_db_state()
 
     async def _execute_meta_ads_spy(self):
         stage = EngineStage.META_ADS_SPY.value
         label = STAGE_LABELS[stage]
-        self.state.current_stage = stage
-        await self._update_db_state()
-
         query = self.state.engine_data.get("initial_input", {}).get("query", "Unknown")
-        await self.log_and_stream(f"Starting {label} for: {query}", stage=stage)
+
+        product_name = query
+        pi = self.state.engine_data.get(EngineStage.PRODUCT_INTELLIGENCE.value)
+        if pi:
+            product_name = pi.get("product_name", query) if isinstance(pi, dict) else query
+
+        await self.log_and_stream(f"Starting {label} for: {product_name}", stage=stage)
 
         try:
-            result = await self.meta_ads_engine.run(query)
-            self.state.engine_data[stage] = result
-            self.state.pending_approval = False
-            self.state.status = "completed"
-            self.state.next_action = "Completed"
+            result = await self.meta_ads_engine.run(
+                product_name,
+                self.state.engine_data.get("initial_input", {}),
+            )
+            self.state.engine_data[stage] = result.model_dump()
+            self.state.engine_data[f"{stage}_research"] = self.meta_ads_engine.research_summary
             await self.log_and_stream(f"{label} complete.", stage=stage)
         except Exception as e:
             await self.log_and_stream(f"{label} failed: {str(e)}", level="error", stage=stage)
             self.state.status = "failed"
+            await self._update_db_state()
 
-        await self._update_db_state()
+
+# Backward-compatible alias
+Orchestrator = AgentRunner

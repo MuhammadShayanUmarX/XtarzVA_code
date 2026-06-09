@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { 
- Activity, 
  ShieldCheck,
  Brain,
  Info,
@@ -10,7 +9,7 @@ import {
  AlertTriangle
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { WORKFLOW_AGENTS } from '../../constants/workflow'
+import { WORKFLOW_AGENTS, AGENT_HOME_PATHS } from '../../constants/workflow'
 import { WorkflowPhase } from '../../types/workflow'
 import WorkflowProgressBar from '../../components/workflows/WorkflowProgressBar'
 import AgentStageRunning from '../../components/workflows/AgentStageRunning'
@@ -22,6 +21,7 @@ import toast from 'react-hot-toast'
 export default function AgentWorkflowPage() {
  const [searchParams] = useSearchParams()
  const runId = searchParams.get('run_id')
+ const isStandalone = searchParams.get('standalone') === 'true'
  const navigate = useNavigate()
  
  // Connect to the real-time stream
@@ -55,12 +55,14 @@ export default function AgentWorkflowPage() {
  
  // Determine phase: show report if the agent is done (pending approval) or failed
  const phase: WorkflowPhase = useMemo(() => {
+ // Standalone runs complete without pending approval
+ if (isStandalone && status === 'completed') return 'reporting'
  // If backend explicitly says we need approval for this stage, show report
  if (pendingApproval && currentStage === agent.id) return 'reporting'
  // If agent status is done or failed, show report
  if (agentState.status === 'done' || agentState.status === 'failed') return 'reporting'
  return 'running'
- }, [pendingApproval, currentStage, agent.id, agentState.status])
+ }, [isStandalone, status, pendingApproval, currentStage, agent.id, agentState.status])
  
  // Transform Backend Engine Data to Frontend Report Format
  const realOutput = useMemo(() => {
@@ -104,11 +106,13 @@ export default function AgentWorkflowPage() {
  case 'commerce_creation':
  return {
  summary_stats: [
+ { label: 'Product Title', value: data.product_title || data.seo_titles?.[0] || 'N/A' },
+ { label: 'SEO Meta', value: data.seo_meta_title ? 'Ready' : 'N/A' },
+ { label: 'Variants', value: `${data.variants?.length || 1}` },
  { label: 'Ad Hooks', value: `${data.ad_copy_hooks?.length || 0}` },
- { label: 'SEO Tags', value: `${data.tags?.length || 0}` },
  { label: 'Images', value: `${data.generated_image_urls?.length || 0}` }
  ],
- reasoning_summary: data.product_description,
+ reasoning_summary: data.homepage_hero_headline || data.product_description,
  recommendations: data.seo_titles
  };
  case 'meta_ads_spy':
@@ -155,11 +159,13 @@ export default function AgentWorkflowPage() {
  }
  }
 
+ const agentHome = AGENT_HOME_PATHS[agent.id] || '/dashboard/products'
+
  const handleCancel = async () => {
- if (runId && confirm('Are you sure you want to ABORT this mission? All active agents will be terminated.')) {
+ if (runId && confirm('Are you sure you want to cancel this run?')) {
  await cancelRun(runId)
- toast.error('Mission Terminated.')
- navigate('/dashboard/run/new')
+ toast.error('Run cancelled.')
+ navigate(agentHome)
  }
  }
 
@@ -176,8 +182,8 @@ export default function AgentWorkflowPage() {
  <div className="w-16 h-16 rounded-full bg-landing-surface flex items-center justify-center text-landing-muted">
  <Info size={32} />
  </div>
- <h2 className="text-xl font-bold text-landing-primary">No active scan</h2>
- <button onClick={() => navigate('/dashboard/run/new')} className="cta-button px-8 h-12 rounded-xl">Start New Scan</button>
+ <h2 className="text-xl font-bold text-landing-primary">No active run</h2>
+ <button onClick={() => navigate('/dashboard/products')} className="cta-button px-8 h-12 rounded-xl">Go to Product Discovery</button>
  </div>
  )
  }
@@ -185,7 +191,7 @@ export default function AgentWorkflowPage() {
  return (
  <div className="max-w-[1400px] mx-auto space-y-12 pb-24 px-4 md:px-8">
  <div className="flex items-center justify-between">
- <WorkflowProgressBar agents={WORKFLOW_AGENTS} activeStep={activeStep} />
+ {!isStandalone && <WorkflowProgressBar agents={WORKFLOW_AGENTS} activeStep={activeStep} />}
  <button 
  onClick={handleCancel}
  className="ml-8 px-6 h-12 rounded-xl bg-accent-rose/10 border border-accent-rose/20 text-accent-rose text-xs font-black tracking-tight hover:bg-accent-rose hover:text-landing-primary transition-all flex items-center gap-2 group shrink-0"
@@ -224,7 +230,9 @@ export default function AgentWorkflowPage() {
  agent={agent} 
  activeStep={activeStep} 
  totalSteps={WORKFLOW_AGENTS.length} 
- onApprove={handleApprove} 
+ onApprove={handleApprove}
+ runId={runId}
+ hideApprove={isStandalone || status === 'completed'}
  realOutput={realOutput}
  researchData={researchData}
  fullEngineData={engineData}
@@ -241,41 +249,11 @@ export default function AgentWorkflowPage() {
  <h3 className="text-xs font-black tracking-tight">Workflow Halted</h3>
  </div>
  <p className="text-xs text-landing-secondary leading-relaxed font-medium">
- Agents encountered a critical error. Please check your API keys or source connectivity.
+ {engineData?.last_error || 'Agents encountered a critical error. Please check your API keys or source connectivity.'}
  </p>
- <button onClick={() => navigate('/dashboard/run/new')} className="w-full h-10 rounded-xl bg-accent-rose text-white text-[10px] font-black uppercase">Restart Setup</button>
+ <button onClick={() => navigate(agentHome)} className="w-full h-10 rounded-xl bg-accent-rose text-white text-[10px] font-black uppercase">Try Again</button>
  </div>
  )}
-
- <div className="glass-panel p-8 space-y-8">
- <div className="flex items-center gap-3">
- <Activity size={20} className="text-landing-accent" />
- <h3 className="text-[10px] font-black text-landing-primary tracking-tight">System Health</h3>
- </div>
- 
- <div className="space-y-6">
- <div className="flex items-center justify-between">
- <span className="text-xs font-bold text-landing-muted">Core Sync</span>
- <span className="text-xs font-black text-accent-emerald">OPTIMAL</span>
- </div>
- <div className="flex items-center justify-between">
- <span className="text-xs font-bold text-landing-muted">LLM Provider</span>
- <span className="text-xs font-black text-landing-primary">{agentState.llm_provider_used || 'N/A'}</span>
- </div>
- <div className="flex items-center justify-between">
- <span className="text-xs font-bold text-landing-muted">Confidence</span>
- <span className="text-xs font-black text-landing-primary">{agentState.confidence_score ? `${(agentState.confidence_score * 100).toFixed(1)}%` : 'N/A'}</span>
- </div>
- <div className="flex items-center justify-between">
- <span className="text-xs font-bold text-landing-muted">Stage</span>
- <span className="text-xs font-black text-accent-cyan">{currentStage ? currentStage.replace(/_/g, ' ').toUpperCase() : 'INITIALIZING'}</span>
- </div>
- <div className="flex items-center justify-between">
- <span className="text-xs font-bold text-landing-muted">Approval</span>
- <span className={cn("text-xs font-black", pendingApproval ? 'text-accent-amber' : 'text-landing-muted')}>{pendingApproval ? 'AWAITING' : 'N/A'}</span>
- </div>
- </div>
- </div>
 
  <div className="glass-panel p-8 bg-gradient-to-br from-accent-primary/5 to-transparent border-landing-accent/20 space-y-6">
  <div className="flex items-center gap-3 text-landing-accent">

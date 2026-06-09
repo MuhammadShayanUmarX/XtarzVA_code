@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     APIFY_API_KEY: str = ""
     FIRECRAWL_API_KEY: str = ""
     SERP_API_KEY: str = ""
+    SERPER_API_KEY: str = ""  # serper.dev — alternative to serpapi.com
     GEEKFLARE_API_KEY: str = ""
     CJ_DROPSHIPPING_API: str = ""
 

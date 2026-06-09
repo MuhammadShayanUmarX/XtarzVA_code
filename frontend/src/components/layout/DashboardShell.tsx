@@ -129,17 +129,6 @@ export default function DashboardShell({ children }: { children?: ReactNode }) {
  </div>
 
  <div className="p-6 border-t border-landing-divider/30 space-y-4">
- {!sidebarCollapsed && (
- <div className="p-4 rounded-xl bg-landing-surface border border-landing-divider">
- <div className="flex items-center justify-between mb-2">
- <span className="text-[10px] font-black text-landing-accent tracking-tight">AI Credits</span>
- </div>
- <div className="h-1.5 w-full bg-landing-bg rounded-full overflow-hidden mb-2">
- <div className="h-full w-[75%] bg-landing-accent rounded-full" />
- </div>
- <p className="text-[10px] font-medium text-landing-secondary">750/1000 credits remaining</p>
- </div>
- )}
  <Popover.Root>
  <Popover.Trigger asChild>
  <button className={cn(

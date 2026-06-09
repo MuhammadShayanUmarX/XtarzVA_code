@@ -1,6 +1,15 @@
 import { Search, Target, Package, TrendingUp, Megaphone, BarChart2, Zap } from 'lucide-react'
 import { AgentStep } from '../types/workflow'
 
+/** Dashboard home route for each agent (standalone flow entry points). */
+export const AGENT_HOME_PATHS: Record<string, string> = {
+  product_intelligence: '/dashboard/products',
+  competitor_intelligence: '/dashboard/insights',
+  product_sourcing: '/dashboard/sourcing',
+  commerce_creation: '/dashboard/shopify',
+  meta_ads_spy: '/dashboard/ads',
+}
+
 export const WORKFLOW_AGENTS: AgentStep[] = [
   {
     id: 'product_intelligence',

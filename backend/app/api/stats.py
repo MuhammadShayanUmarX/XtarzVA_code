@@ -26,6 +26,7 @@ def _serialize_run(run: Run) -> dict:
         "id": str(run.id),
         "name": run.name,
         "status": run.status,
+        "agent": run.agent or run.current_stage,
         "current_stage": run.current_stage,
         "query": initial.get("query", run.name),
         "created_at": run.created_at.isoformat() if run.created_at else None,

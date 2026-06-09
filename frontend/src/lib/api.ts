@@ -2,8 +2,15 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { tokenStorage } from './storage'
 import { useSession } from '../store/session'
 
+function resolveApiBaseUrl(): string {
+  const env = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (!env) return '/api'
+  if (env.endsWith('/api')) return env.replace(/\/$/, '')
+  return `${env.replace(/\/$/, '')}/api`
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: resolveApiBaseUrl(),
   timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',

@@ -34,12 +34,16 @@ class Run(Base):
     number: Mapped[int] = mapped_column(Integer, nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    agent: Mapped[str] = mapped_column(String, default="")
     status: Mapped[str] = mapped_column(String, default="stopped")
     current_stage: Mapped[str] = mapped_column(String, default="")
     engine_data: Mapped[Dict] = mapped_column(JSON, default={})
     pending_approval: Mapped[bool] = mapped_column(Boolean, default=False)
     progress_pct: Mapped[float] = mapped_column(Float, default=0)
     credits_used: Mapped[int] = mapped_column(Integer, default=1)
+    source_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("runs.id", ondelete="SET NULL"), nullable=True
+    )
     error: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

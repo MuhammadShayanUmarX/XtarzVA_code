@@ -78,6 +78,13 @@ class ProductSourcingOutput(BaseModel):
     reasoning: str
 
 
+class ProductVariant(BaseModel):
+    title: str = "Default"
+    price: str = "29.99"
+    compare_at_price: Optional[str] = None
+    sku: str = ""
+
+
 class CommerceCreationOutput(BaseModel):
     seo_titles: List[str]
     product_description: str
@@ -88,6 +95,42 @@ class CommerceCreationOutput(BaseModel):
     ugc_scripts: List[str] = []
     image_generation_prompts: List[str] = []
     generated_image_urls: List[str] = []
+    # Shopify-ready assets
+    product_title: str = ""
+    seo_meta_title: str = ""
+    seo_meta_description: str = ""
+    product_description_html: str = ""
+    collection_title: str = ""
+    collection_description: str = ""
+    homepage_hero_headline: str = ""
+    homepage_hero_subheadline: str = ""
+    about_page_snippet: str = ""
+    variants: List[ProductVariant] = []
+    store_theme_json: Dict[str, Any] = {}
+
+
+class SelectProductRequest(BaseModel):
+    product: ProductIntelligenceOutput
+
+
+class AgentRunRequest(BaseModel):
+    initial_input: Dict[str, Any] = {}
+    source_run_id: Optional[str] = None
+    product: Optional[ProductIntelligenceOutput] = None
+
+
+class StandaloneRunRequest(BaseModel):
+    stage: EngineStage
+    initial_input: Dict[str, Any] = {}
+    source_run_id: Optional[str] = None
+    product: Optional[ProductIntelligenceOutput] = None
+
+
+class ImportProductRequest(BaseModel):
+    source_run_id: str
+    target_stage: EngineStage
+    initial_input: Dict[str, Any] = {}
+    product: Optional[ProductIntelligenceOutput] = None
 
 
 class ContactSubmissionRequest(BaseModel):

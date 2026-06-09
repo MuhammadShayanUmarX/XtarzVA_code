@@ -1,10 +1,10 @@
 # Xtarz Commerce OS — Backend
 
-Agentic commerce research API. Five pipeline stages:
+Agentic commerce research API. Five independent agents (no monolithic pipeline):
 
 - **Product Discovery** — find winning products
-- **Competitor Intel** — analyze market gaps
-- **Sourcing** — find suppliers
+- **Competitor Intel** — analyze market gaps (import product from Discovery)
+- **Sourcing** — find suppliers (import product from Discovery)
 - **Store Builder** — generate store content
 - **Ad Creative** — generate ad copy and hooks
 

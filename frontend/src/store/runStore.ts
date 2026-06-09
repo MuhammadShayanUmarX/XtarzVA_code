@@ -100,6 +100,15 @@ export const useRunStore = create<RunStore>((set, get) => ({
         const prevStage = get().currentStage;
         const newStage = event.current_stage;
 
+        // When a standalone run completes, mark the current agent as done
+        if (event.status === 'completed' && newStage) {
+          get().updateAgentState(newStage, {
+            status: 'done',
+            progress_pct: 100,
+            timestamp: new Date().toISOString()
+          });
+        }
+
         // When the backend says pending_approval=true, that means the current agent
         // has finished its work. Mark that agent as "done" so the frontend shows the report.
         if (event.pending_approval && newStage) {
@@ -117,6 +126,14 @@ export const useRunStore = create<RunStore>((set, get) => ({
             status: 'running',
             progress_pct: 0,
             sub_task: `Starting ${newStage.replace(/_/g, ' ')}...`,
+            timestamp: new Date().toISOString()
+          });
+        }
+
+        if (event.status === 'failed' && newStage) {
+          get().updateAgentState(newStage, {
+            status: 'failed',
+            sub_task: event.engine_data?.last_error || 'Agent run failed',
             timestamp: new Date().toISOString()
           });
         }
