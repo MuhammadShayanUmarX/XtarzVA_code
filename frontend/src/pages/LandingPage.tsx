@@ -16,7 +16,7 @@ import Footer from '../components/landing/Footer'
 
 export default function LandingPage() {
   return (
-    <div className="bg-landing-bg min-h-screen text-landing-primary selection:bg-landing-accent/20 font-sans">
+    <div className="bg-landing-bg min-h-screen text-landing-primary selection:bg-landing-accent/25 font-sans">
       <Navbar />
       <main>
         {/* 1. Hero — outcome-focused headline */}
