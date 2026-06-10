@@ -28,6 +28,47 @@ import { AgentStep } from '../../types/workflow'
 import { cn } from '../../lib/utils'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
+import ResultsDataTable, { LinkCell, TableColumn } from './ResultsDataTable'
+import type { ProductCandidate, CompetitorProfile, SourcingOption } from '../../types/agents'
+
+const PRODUCT_COLUMNS: TableColumn<ProductCandidate>[] = [
+  { key: 'product_name', label: 'Product', className: 'max-w-[200px]', render: (r) => (
+    <span className={cn('font-bold text-white line-clamp-2', r.is_recommended && 'text-accent-amber')}>{r.product_name}</span>
+  )},
+  { key: 'platform', label: 'Platform' },
+  { key: 'price', label: 'Price', render: (r) => r.price || '—' },
+  { key: 'demand_signal', label: 'Demand', render: (r) => r.demand_signal || '—' },
+  { key: 'source_url', label: 'Link', render: (r) => <LinkCell url={r.source_url} /> },
+]
+
+const COMPETITOR_COLUMNS: TableColumn<CompetitorProfile>[] = [
+  { key: 'store_name', label: 'Store', render: (r) => (
+    <span className="font-bold text-white line-clamp-1">{r.store_name}</span>
+  )},
+  { key: 'platform', label: 'Platform' },
+  { key: 'price', label: 'Price', render: (r) => r.price || r.price_range || '—' },
+  { key: 'positioning', label: 'Positioning', render: (r) => r.positioning || '—' },
+  { key: 'threat_level', label: 'Threat', render: (r) => (
+    <span className={cn(
+      'font-black uppercase text-[10px]',
+      r.threat_level === 'High' ? 'text-accent-rose' :
+      r.threat_level === 'Medium' ? 'text-accent-amber' : 'text-accent-emerald'
+    )}>{r.threat_level || '—'}</span>
+  )},
+  { key: 'store_url', label: 'Link', render: (r) => <LinkCell url={r.store_url} /> },
+]
+
+const SOURCING_COLUMNS: TableColumn<SourcingOption>[] = [
+  { key: 'supplier_name', label: 'Supplier', render: (r) => (
+    <span className={cn('font-bold text-white line-clamp-1', r.is_recommended && 'text-accent-amber')}>{r.supplier_name}</span>
+  )},
+  { key: 'platform', label: 'Platform' },
+  { key: 'country', label: 'Country', render: (r) => r.country || '—' },
+  { key: 'moq', label: 'MOQ', render: (r) => r.moq != null ? `${r.moq} units` : '—' },
+  { key: 'price_per_unit', label: 'Unit Price', render: (r) => r.price_per_unit != null ? `$${r.price_per_unit}` : '—' },
+  { key: 'shipping_time', label: 'Shipping', render: (r) => r.shipping_time || '—' },
+  { key: 'product_url', label: 'Link', render: (r) => <LinkCell url={r.product_url} /> },
+]
 
 interface AgentStageReportProps {
  agent: AgentStep
@@ -110,6 +151,22 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
 
  const redditSource = researchData?.find(r => r.source.includes('Reddit') || r.source.includes('💬'));
  const redditSignals = redditSource?.highlights || [];
+
+ const productCandidates: ProductCandidate[] = fullEngineData?.product_candidates || [];
+ const competitorProfiles: CompetitorProfile[] = fullEngineData?.competitor_profiles || [];
+ const sourcingOptions: SourcingOption[] = fullEngineData?.sourcing_options?.length
+   ? fullEngineData.sourcing_options
+   : (fullEngineData?.product_sourcing?.suppliers || []).map((s: SourcingOption & { product_url?: string }) => ({
+     supplier_name: s.supplier_name,
+     platform: s.platform,
+     product_url: s.product_url || '',
+     price_per_unit: s.price_per_unit,
+     moq: s.moq,
+     country: s.country,
+     shipping_time: s.shipping_time,
+     supplier_rating: s.supplier_rating,
+     is_recommended: s.supplier_name === fullEngineData?.product_sourcing?.best_option?.supplier_name,
+   }));
 
  return (
  <motion.div 
@@ -236,6 +293,14 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  </div>
  </div>
 
+ <ResultsDataTable
+   title="Discovered Products"
+   subtitle="All products found across Amazon, TikTok Shop, Web, and Reddit sources. Highlighted row is the AI-recommended winner."
+   columns={PRODUCT_COLUMNS}
+   rows={productCandidates}
+   emptyMessage="No structured product listings were captured for this run."
+ />
+
  {/* TikTok & Reddit deep research showcases */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
  {/* TikTok Shop Wave card */}
@@ -295,6 +360,15 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  <p className="text-xs text-landing-secondary">Deep website audits, search saturation indexes, and target pricing gap analysis.</p>
  </div>
  </div>
+
+ <ResultsDataTable
+   title="Competitor Stores"
+   subtitle="All competitors discovered from Amazon, TikTok Shop, web search, and website audits."
+   columns={COMPETITOR_COLUMNS}
+   rows={competitorProfiles}
+   emptyMessage="No competitor store listings were captured for this run."
+   highlightKey=""
+ />
 
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
  {/* Saturation Meter Card */}
@@ -462,68 +536,14 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  </div>
  )}
 
- {/* Sourced supplier comparisons cards */}
- <div className="space-y-4">
- <span className="text-[10px] font-black text-landing-muted tracking-tight block">All Discovered Sourcing Options</span>
- <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
- {fullEngineData.product_sourcing.suppliers?.map((supplier: any, idx: number) => (
- <div 
- key={idx} 
- className={cn(
-"p-6 rounded-3xl bg-white/[0.01] border transition-all flex flex-col justify-between space-y-6 group hover:border-landing-divider",
- supplier.supplier_name === fullEngineData.product_sourcing.best_option?.supplier_name 
- ?"border-accent-amber/20 bg-accent-amber/[0.005]" 
- :"border-landing-divider"
- )}
- >
- <div className="space-y-4">
- <div className="flex justify-between items-center">
- <span className={cn(
-"px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
- supplier.platform === 'Alibaba' 
- ? 'bg-accent-indigo/10 text-accent-indigo border border-accent-indigo/20'
- : 'bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20'
- )}>
- {supplier.platform}
- </span>
- 
- <div className="flex items-center gap-1 text-[10px] text-accent-amber font-bold">
- <Star size={12} className="fill-current" />
- <span>{supplier.supplier_rating || '4.8'}</span>
- </div>
- </div>
-
- <div className="space-y-1">
- <h6 className="text-sm font-bold text-white group-hover:text-landing-accent transition-colors line-clamp-1">{supplier.supplier_name}</h6>
- <span className="text-[10px] text-landing-muted font-medium block">MOQ: {supplier.moq || 1} units</span>
- </div>
- </div>
-
- <div className="pt-4 border-t border-landing-divider flex justify-between items-center text-xs">
- <div>
- <span className="text-[8px] font-black text-landing-muted tracking-tight block">Unit Price</span>
- <span className="font-black text-white">${supplier.price_per_unit}</span>
- </div>
- <div className="text-right">
- <span className="text-[8px] font-black text-landing-muted tracking-tight block">Shipping</span>
- <span className="font-black text-landing-secondary">{supplier.shipping_time || '10-15d'}</span>
- </div>
- </div>
-
- {supplier.product_url && (
- <a 
- href={supplier.product_url} 
- target="_blank" 
- rel="noreferrer"
- className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-white/5 border border-landing-divider text-[10px] font-black tracking-tight text-landing-secondary hover:bg-white hover:text-black transition-all animate-none"
- >
- Inspect Product <ExternalLink size={10} />
- </a>
- )}
- </div>
- ))}
- </div>
- </div>
+ {/* Sourced supplier comparisons table */}
+ <ResultsDataTable
+   title="All Discovered Sourcing Options"
+   subtitle="Suppliers found on CJ Dropshipping, Alibaba, and AliExpress. Highlighted row is the recommended option."
+   columns={SOURCING_COLUMNS}
+   rows={sourcingOptions}
+   emptyMessage="No sourcing options were captured for this run."
+ />
  </div>
  )}
 

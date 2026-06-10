@@ -46,6 +46,59 @@ class ResearchTools:
                 return str(scrape_result["content"])[:2000]
         return str(scrape_result)[:2000]
 
+    @staticmethod
+    def _parse_marketplace_details(
+        details: Any,
+        url: str,
+        platform: str,
+        fallback_title: str = "",
+    ) -> Dict[str, Any]:
+        import re
+
+        markdown = ResearchTools._extract_markdown(details) if details else ""
+        title = fallback_title
+        price = None
+        moq = 1
+        country = "China"
+
+        if markdown:
+            for line in markdown.split("\n")[:15]:
+                line = line.strip()
+                if line.startswith("#") and len(line) > 2:
+                    title = line.lstrip("#").strip()[:200]
+                    break
+            if not title:
+                for line in markdown.split("\n")[:10]:
+                    line = line.strip()
+                    if len(line) > 10 and not line.startswith("http"):
+                        title = line[:200]
+                        break
+
+            price_match = re.search(r"\$[\d,.]+(?:\s*-\s*\$[\d,.]+)?", markdown)
+            if price_match:
+                price = price_match.group()
+            moq_match = re.search(r"MOQ[:\s]*(\d+)", markdown, re.I)
+            if moq_match:
+                moq = int(moq_match.group(1))
+            country_match = re.search(
+                r"(China|USA|United States|UK|Germany|India|Vietnam|Turkey|Pakistan)",
+                markdown,
+                re.I,
+            )
+            if country_match:
+                country = country_match.group(1)
+
+        return {
+            "title": title or f"{platform} Product",
+            "price": price,
+            "moq": moq,
+            "country": country,
+            "url": url,
+            "platform": platform,
+            "supplier_name": (title or platform)[:80],
+            "rating": 4.5,
+        }
+
     def _unsplash_access_key(self) -> str:
         return settings.ACCESS_TOKEN or settings.APPLICATION_AI or ""
 
@@ -332,41 +385,56 @@ class ResearchTools:
                 return {"markdown": str(geekflare)[:2000], "url": url, "source": "geekflare", "lighthouse": geekflare}
             return {}
 
-    async def search_alibaba(self, query: str, max_items: int = 3) -> List[Dict[str, Any]]:
+    async def search_alibaba(self, query: str, max_items: int = 8) -> List[Dict[str, Any]]:
         """Search for wholesale suppliers on Alibaba for FREE (Tavily + Firecrawl)."""
         try:
-            # 1. Use Tavily to find direct product URLs on Alibaba
             search_query = f"site:alibaba.com {query} wholesale"
             results = await self.search_web(search_query, max_results=max_items)
-            
+
             sourcing_data = []
             for res in results:
-                url = res.get("url")
-                if "alibaba.com/product-detail" in url:
-                    # 2. Use Firecrawl to scrape the details for free
-                    details = await self.audit_website(url)
-                    sourcing_data.append({"url": url, "details": details})
-            
+                url = res.get("url", "")
+                if "alibaba.com" not in url:
+                    continue
+                details = await self.audit_website(url)
+                parsed = self._parse_marketplace_details(
+                    details,
+                    url,
+                    "Alibaba",
+                    fallback_title=res.get("title", ""),
+                )
+                sourcing_data.append(parsed)
+                if len(sourcing_data) >= max_items:
+                    break
+
             return sourcing_data
         except Exception as e:
             logger.error(f"Free Alibaba sourcing failed: {str(e)}")
             return []
 
-    async def search_aliexpress(self, query: str, max_items: int = 3) -> List[Dict[str, Any]]:
+    async def search_aliexpress(self, query: str, max_items: int = 8) -> List[Dict[str, Any]]:
         """Search for dropshipping suppliers on AliExpress for FREE (Tavily + Firecrawl)."""
         try:
-            # 1. Use Tavily to find direct product URLs on AliExpress
             search_query = f"site:aliexpress.com {query} dropshipping"
             results = await self.search_web(search_query, max_results=max_items)
-            
+
             sourcing_data = []
             for res in results:
-                url = res.get("url")
-                if "aliexpress.com/item" in url:
-                    # 2. Use Firecrawl to scrape the details for free
-                    details = await self.audit_website(url)
-                    sourcing_data.append({"url": url, "details": details})
-            
+                url = res.get("url", "")
+                if "aliexpress.com" not in url:
+                    continue
+                details = await self.audit_website(url)
+                parsed = self._parse_marketplace_details(
+                    details,
+                    url,
+                    "AliExpress",
+                    fallback_title=res.get("title", ""),
+                )
+                parsed["shipping"] = "15-25 days"
+                sourcing_data.append(parsed)
+                if len(sourcing_data) >= max_items:
+                    break
+
             return sourcing_data
         except Exception as e:
             logger.error(f"Free AliExpress sourcing failed: {str(e)}")
@@ -522,6 +590,7 @@ class ResearchTools:
                             "rating": 4.8,
                             "orders": 100,
                             "shipping": "CJ Packet (7-12 days)",
+                            "country": p.get("warehouse", "China") or "China",
                             "url": f"https://cjdropshipping.com/product-detail.html?id={pid}" if pid else "https://cjdropshipping.com",
                             "image": p.get("bigImage", p.get("productImage", ""))
                         })

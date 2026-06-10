@@ -23,6 +23,42 @@ class WorkflowState(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.now)
 
 
+class ProductCandidate(BaseModel):
+    product_name: str
+    platform: str
+    source_url: str = ""
+    price: Optional[str] = None
+    currency: str = "USD"
+    demand_signal: Optional[str] = None
+    category: Optional[str] = None
+    snippet: Optional[str] = None
+    is_recommended: bool = False
+
+
+class CompetitorProfile(BaseModel):
+    store_name: str
+    store_url: str
+    platform: str
+    price: Optional[str] = None
+    price_range: Optional[str] = None
+    positioning: Optional[str] = None
+    threat_level: Optional[str] = None
+    is_shopify: bool = False
+    notes: Optional[str] = None
+
+
+class SourcingOption(BaseModel):
+    supplier_name: str
+    platform: str
+    product_url: str = ""
+    price_per_unit: Optional[float] = None
+    moq: Optional[int] = None
+    country: Optional[str] = None
+    shipping_time: Optional[str] = None
+    supplier_rating: Optional[float] = None
+    is_recommended: bool = False
+
+
 class ProductIntelligenceOutput(BaseModel):
     product_name: str
     product_category: str
@@ -41,6 +77,7 @@ class CompetitorIntelligenceOutput(BaseModel):
     SEO_gaps: List[str]
     product_opportunities: List[str]
     market_saturation_score: int = Field(ge=0, le=100)
+    competitors: List[CompetitorProfile] = []
 
 
 class TrackedAd(BaseModel):
@@ -68,6 +105,7 @@ class SupplierInfo(BaseModel):
     shipping_time: str
     supplier_rating: float
     product_url: str
+    country: Optional[str] = None
 
 
 class ProductSourcingOutput(BaseModel):

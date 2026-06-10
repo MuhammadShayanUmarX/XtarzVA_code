@@ -349,6 +349,7 @@ class AgentRunner:
             self.state.engine_data[stage] = result.model_dump()
             self.state.engine_data["selected_product"] = result.model_dump()
             self.state.engine_data[f"{stage}_research"] = self.product_engine.research_summary
+            self.state.engine_data["product_candidates"] = self.product_engine.product_candidates
             await self.log_and_stream(
                 f"{label} complete: {result.product_name}",
                 stage=stage,
@@ -391,6 +392,7 @@ class AgentRunner:
             )
             self.state.engine_data[stage] = result.model_dump()
             self.state.engine_data[f"{stage}_research"] = self.competitor_engine.research_summary
+            self.state.engine_data["competitor_profiles"] = self.competitor_engine.competitor_profiles
             await self.log_and_stream(f"{label} complete.", stage=stage)
 
             if self.db:
@@ -426,6 +428,7 @@ class AgentRunner:
             )
             self.state.engine_data[stage] = result.model_dump()
             self.state.engine_data[f"{stage}_research"] = self.sourcing_engine.research_summary
+            self.state.engine_data["sourcing_options"] = self.sourcing_engine.sourcing_options
             await self.log_and_stream(f"{label} complete.", stage=stage)
 
             if self.db:
