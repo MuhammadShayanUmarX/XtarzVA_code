@@ -1,5 +1,6 @@
 import Navbar from '../components/landing/Navbar'
 import Hero from '../components/landing/Hero'
+import DashboardPreview from '../components/landing/DashboardPreview'
 import TrustedBy from '../components/landing/TrustedBy'
 import ProblemSolution from '../components/landing/ProblemSolution'
 import ProductDiscovery from '../components/landing/ProductDiscovery'
@@ -20,7 +21,9 @@ export default function LandingPage() {
       <main>
         {/* 1. Hero — outcome-focused headline */}
         <Hero />
-        {/* 2. Social Proof — trusted by */}
+        {/* 2. Dashboard preview — show the product */}
+        <DashboardPreview />
+        {/* 3. Social Proof — trusted by */}
         <TrustedBy />
         {/* 3. Problem → Solution — relatable before/after */}
         <ProblemSolution />
