@@ -3,6 +3,7 @@ import json
 from typing import Dict, Any, List, Optional
 from ..models.schemas import ProductSourcingOutput, ProductIntelligenceOutput, SupplierInfo
 from ..core.llm import call_with_fallback
+from ..core.prompt_loader import build_system_prompt, build_user_prompt, get_max_prompt_chars, get_user_task
 from ..core.tools import research_tools
 from ..core.result_normalizer import (
     MAX_ROWS,
@@ -12,7 +13,7 @@ from ..core.result_normalizer import (
 
 logger = logging.getLogger(__name__)
 
-MAX_PROMPT_CHARS = 3500
+AGENT_ID = "product_sourcing"
 
 
 class ProductSourcingEngine:
@@ -111,28 +112,13 @@ class ProductSourcingEngine:
         options_for_llm = [o.model_dump() for o in normalized[:MAX_ROWS]]
         sourcing_context = self._prune_data({"options": options_for_llm}, max_chars=150)
 
-        condensed_persona = "You are a supply chain analyst. Vet suppliers carefully and prioritize margin and shipping speed."
-        system_prompt = (
-            f"{condensed_persona}\n"
-            "Vet and secure 'Tier-1' supply chain partners."
-            "\n\nOUTPUT: Valid JSON only. Raw numbers (no $ or units)."
-            "\nSCHEMA:"
-            "\n{"
-            "\n  \"suppliers\": ["
-            "\n    {\"supplier_name\":\"\",\"platform\":\"CJ Dropshipping\",\"price_per_unit\":0.0,\"moq\":1,"
-            "\"shipping_time\":\"7-12 days\",\"supplier_rating\":4.8,\"product_url\":\"\",\"country\":\"China\"}"
-            "\n  ],"
-            "\n  \"best_option\": { same as supplier object },"
-            "\n  \"profit_margin_estimate\": 35.0,"
-            "\n  \"sourcing_risk_level\": \"Low\","
-            "\n  \"reasoning\": \"Strategic explanation.\""
-            "\n}"
-        )
+        system_prompt = build_system_prompt(AGENT_ID)
+        task = get_user_task(AGENT_ID)
+        max_prompt_chars = get_max_prompt_chars(AGENT_ID)
 
         data_json = json.dumps(sourcing_context, separators=(',', ':'))
-        max_data_chars = MAX_PROMPT_CHARS - len(
-            f"Product:{product_name}\nCategory:{product_category}\nTASK:Identify Best Sourcing Option. Return JSON.\nDATA:"
-        )
+        user_prefix = f"Product:{product_name}\nCategory:{product_category}\nTASK:{task}\nDATA:"
+        max_data_chars = max_prompt_chars - len(user_prefix)
         if len(data_json) > max_data_chars:
             data_json = data_json[:max_data_chars]
 
@@ -144,17 +130,19 @@ class ProductSourcingEngine:
         if initial_input.get("shipping_region"):
             constraints.append(f"Ship to: {initial_input['shipping_region']}")
         constraint_text = "\n".join(constraints)
+        constraints_block = f"CONSTRAINTS:\n{constraint_text}\n" if constraint_text else ""
 
-        user_prompt = (
-            f"Product:{product_name}\n"
-            f"Category:{product_category}\n"
-            + (f"CONSTRAINTS:\n{constraint_text}\n" if constraint_text else "")
-            + f"DATA:{data_json}\n"
-            "TASK:Identify Best Sourcing Option. Return JSON."
+        user_prompt = build_user_prompt(
+            AGENT_ID,
+            product_name=product_name,
+            product_category=product_category,
+            constraints_block=constraints_block,
+            data_json=data_json,
+            task=task,
         )
 
         output, provider = await call_with_fallback(
-            "product_sourcing", system_prompt, user_prompt, ProductSourcingOutput, "system_run"
+            AGENT_ID, system_prompt, user_prompt, ProductSourcingOutput, "system_run"
         )
 
         self.sourcing_options = mark_recommended_sourcing(

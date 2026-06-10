@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "agent_id": "product_intelligence",
+  "max_prompt_chars": 3500,
+  "llm": {
+    "temperature": 0.3
+  },
+  "system_template": "{persona}\nIdentify a 'Tier-1' commerce opportunity from the research data.\n\nCRITICAL: trend_score, demand_score, and competition_score MUST be INTEGERS between 0 and 100.\nDO NOT return decimals like 0.99. Return 99.\n\nOUTPUT: Valid JSON only. Raw numbers. No units.\nSCHEMA:\n{\"product_name\":\"\",\"product_category\":\"\",\"trend_score\":85,\"demand_score\":90,\"competition_score\":30,\"estimated_margin\":45.0,\"risk_level\":\"Low\",\"evidence_sources\":[],\"reasoning\":\"\"}",
+  "fragments": {
+    "persona": "You are a product research analyst. Decisive, data-driven, expert in e-commerce market trends."
+  },
+  "user": {
+    "template": "TARGET:{query}\nDATA:{data_json}\nTASK:{task}",
+    "task": "Pick best product. Return JSON (Integers for scores)."
+  }
+}

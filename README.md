@@ -27,3 +27,7 @@ npm run dev
 ```
 
 Open `http://localhost:5174` (Vite proxies `/api` → backend).
+
+## Roadmap
+
+Post-MVP features, phases, and technical debt are tracked in [docs/FUTURE_CHANGES_AND_UPDATES.md](docs/FUTURE_CHANGES_AND_UPDATES.md).

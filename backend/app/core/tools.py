@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import urllib.parse
 import httpx
@@ -19,7 +20,9 @@ class ResearchTools:
         self.cj_access_token = None
 
         integrations = {
-            "groq": bool(settings.GROQ_API_KEY),
+            "google": bool(settings.GOOGLE_API_KEY),
+            "gemini": bool(settings.GOOGLE_API_KEY),
+            "imagen": bool(settings.GOOGLE_API_KEY),
             "tavily": bool(self.tavily_client),
             "apify": bool(self.apify_client),
             "firecrawl": bool(self.firecrawl_app),
@@ -440,10 +443,41 @@ class ResearchTools:
             logger.error(f"Free AliExpress sourcing failed: {str(e)}")
             return []
 
-    def generate_image_url(self, prompt: str, width: int = 1024, height: int = 1024) -> str:
-        """Generate a Pollinations AI image URL."""
-        encoded_prompt = urllib.parse.quote(prompt)
-        return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
+    async def generate_image_imagen(self, prompt: str) -> Optional[bytes]:
+        """Generate an image via Google Imagen. Returns JPEG/PNG bytes or None."""
+        if not settings.GOOGLE_API_KEY:
+            logger.warning("GOOGLE_API_KEY not configured. Skipping Imagen generation.")
+            return None
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+
+            def _generate() -> Optional[bytes]:
+                response = client.models.generate_images(
+                    model=settings.IMAGEN_MODEL,
+                    prompt=prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        output_mime_type="image/jpeg",
+                    ),
+                )
+                if response.generated_images:
+                    img = response.generated_images[0].image
+                    if img and img.image_bytes:
+                        return img.image_bytes
+                return None
+
+            return await asyncio.to_thread(_generate)
+        except Exception as e:
+            logger.error(f"Imagen generation failed: {e}")
+            return None
+
+    @staticmethod
+    def image_bytes_to_data_url(image_bytes: bytes, mime: str = "image/jpeg") -> str:
+        encoded = base64.b64encode(image_bytes).decode("ascii")
+        return f"data:{mime};base64,{encoded}"
 
     async def search_meta_ads(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
         """Research active Meta / Facebook ads for a niche via SerpAPI + Tavily."""

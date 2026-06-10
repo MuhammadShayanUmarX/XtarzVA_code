@@ -1,0 +1,41 @@
+<section class="xtarz-featured">
+  <div class="xtarz-container">
+    <div class="xtarz-featured__grid">
+      <div>
+        {% if section.settings.product_image_asset != blank %}
+          <img
+            class="xtarz-featured__image"
+            src="{{ section.settings.product_image_asset | asset_url }}"
+            alt="{{ section.settings.title | escape }}"
+            loading="lazy"
+          >
+        {% endif %}
+      </div>
+      <div>
+        <h2>{{ section.settings.title }}</h2>
+        <p class="xtarz-featured__desc">{{ section.settings.description }}</p>
+        {% if section.settings.price != blank %}
+          <p class="xtarz-featured__price">{{ section.settings.price }}</p>
+        {% endif %}
+        {% if section.settings.compare_at_price != blank %}
+          <p class="xtarz-featured__compare">{{ section.settings.compare_at_price }}</p>
+        {% endif %}
+        <a href="{{ routes.all_products_collection_url }}" class="xtarz-btn">View product</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Featured Product",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Product title", "default": "Featured Product" },
+    { "type": "textarea", "id": "description", "label": "Description", "default": "Our signature piece — designed with care." },
+    { "type": "text", "id": "price", "label": "Price display", "default": "$49.99" },
+    { "type": "text", "id": "compare_at_price", "label": "Compare at price", "default": "$64.99" },
+    { "type": "text", "id": "product_image_asset", "label": "Product image asset", "default": "product-1.jpg" }
+  ],
+  "presets": [{ "name": "Featured Product" }]
+}
+{% endschema %}

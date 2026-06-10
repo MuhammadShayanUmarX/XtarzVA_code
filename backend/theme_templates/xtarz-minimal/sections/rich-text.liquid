@@ -1,0 +1,19 @@
+<section class="xtarz-rich-text">
+  <div class="xtarz-container">
+    {% if section.settings.heading != blank %}
+      <h2>{{ section.settings.heading }}</h2>
+    {% endif %}
+    <div class="xtarz-rich-text__body">{{ section.settings.body }}</div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Rich Text",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Our story" },
+    { "type": "richtext", "id": "body", "label": "Body", "default": "<p>We believe in products that earn a permanent place in your life — not landfill.</p>" }
+  ],
+  "presets": [{ "name": "Rich Text" }]
+}
+{% endschema %}

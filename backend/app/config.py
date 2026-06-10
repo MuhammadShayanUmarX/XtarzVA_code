@@ -21,8 +21,12 @@ class Settings(BaseSettings):
     SHOPIFY_API_KEY: str = ""
     SHOPIFY_API_SECRET: str = ""
     
-    # LLM Settings
-    GROQ_API_KEY: str = "" # Groq is the primary engine
+    # Google AI Settings (Gemini + Imagen)
+    GOOGLE_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_STRUCTURED_MODEL: str = "gemini-2.0-flash"
+    GEMINI_THEME_MODEL: str = "gemini-2.0-flash"  # Store Builder — set to gemini-2.5-pro for max quality
+    IMAGEN_MODEL: str = "imagen-3.0-generate-002"
     
     # Data & Research Settings
     TAVILY_API_KEY: str = ""

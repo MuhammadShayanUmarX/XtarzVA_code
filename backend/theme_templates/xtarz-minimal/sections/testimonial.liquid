@@ -1,0 +1,21 @@
+{% if section.settings.quote != blank %}
+<section class="xtarz-testimonial">
+  <div class="xtarz-container">
+    <blockquote class="xtarz-testimonial__quote">"{{ section.settings.quote }}"</blockquote>
+    {% if section.settings.author != blank %}
+      <p class="xtarz-testimonial__author">— {{ section.settings.author }}</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Testimonial",
+  "settings": [
+    { "type": "textarea", "id": "quote", "label": "Quote", "default": "This completely changed my daily routine. Worth every penny." },
+    { "type": "text", "id": "author", "label": "Author", "default": "Sarah M., verified buyer" }
+  ],
+  "presets": [{ "name": "Testimonial" }]
+}
+{% endschema %}

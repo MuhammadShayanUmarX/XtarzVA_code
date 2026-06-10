@@ -1,7 +1,7 @@
 import time
 import logging
 import asyncio
-from typing import Type, Tuple
+from typing import Optional, Type, Tuple
 from pydantic import BaseModel
 
 from ..agents.runtime import invoke_structured_agent
@@ -17,7 +17,7 @@ class LLMRouter:
 
     def __init__(self):
         self.circuit_breaker = {"failures": 0, "last_failure": 0, "open_until": 0}
-        logger.info("LangChain agent runtime initialized (ChatGroq / llama-3.1-8b-instant)")
+        logger.info("LangChain agent runtime initialized (ChatGoogleGenerativeAI / Gemini)")
 
     def _is_available(self) -> bool:
         return time.time() >= self.circuit_breaker["open_until"]
@@ -30,6 +30,7 @@ class LLMRouter:
         output_model: Type[BaseModel],
         run_id: str,
         temperature: float = 0.3,
+        model_name: Optional[str] = None,
     ) -> Tuple[BaseModel, str]:
         if not self._is_available():
             wait_time = self.circuit_breaker["open_until"] - time.time()
@@ -50,6 +51,7 @@ class LLMRouter:
                     output_model=output_model,
                     run_id=run_id,
                     temperature=temperature,
+                    model_name=model_name,
                 )
                 latency = (time.time() - start_time) * 1000
                 logger.info(

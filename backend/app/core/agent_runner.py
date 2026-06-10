@@ -11,6 +11,7 @@ from ..models.schemas import (
     CompetitorIntelligenceOutput,
     ProductSourcingOutput,
     CommerceCreationOutput,
+    MetaAdsSpyOutput,
     SupplierInfo,
 )
 from ..models.models import (
@@ -45,12 +46,17 @@ IMPORTABLE_AGENTS = {
 STAGE_PREREQUISITES = {
     EngineStage.COMPETITOR_INTELLIGENCE.value: [EngineStage.PRODUCT_INTELLIGENCE.value],
     EngineStage.PRODUCT_SOURCING.value: [EngineStage.PRODUCT_INTELLIGENCE.value],
-    EngineStage.COMMERCE_CREATION.value: [
+    EngineStage.META_ADS_SPY.value: [
         EngineStage.PRODUCT_INTELLIGENCE.value,
         EngineStage.COMPETITOR_INTELLIGENCE.value,
         EngineStage.PRODUCT_SOURCING.value,
     ],
-    EngineStage.META_ADS_SPY.value: [EngineStage.PRODUCT_INTELLIGENCE.value],
+    EngineStage.COMMERCE_CREATION.value: [
+        EngineStage.PRODUCT_INTELLIGENCE.value,
+        EngineStage.COMPETITOR_INTELLIGENCE.value,
+        EngineStage.PRODUCT_SOURCING.value,
+        EngineStage.META_ADS_SPY.value,
+    ],
 }
 
 STAGE_EXECUTORS = {
@@ -111,7 +117,7 @@ class AgentRunner:
             "sub_task": message,
             "progress_pct": metadata.get("progress_pct", 0) if metadata else 0,
             "confidence_score": metadata.get("confidence_score", 0.95) if metadata else 0.95,
-            "llm_provider_used": metadata.get("llm_provider", "groq") if metadata else "groq",
+            "llm_provider_used": metadata.get("llm_provider", "gemini") if metadata else "gemini",
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -472,26 +478,31 @@ class AgentRunner:
 
         await self.log_and_stream(f"Starting {label} for: {product_data.product_name}", stage=stage)
 
+        meta_raw = self.state.engine_data.get(EngineStage.META_ADS_SPY.value)
+        meta_ads_data = MetaAdsSpyOutput.model_validate(meta_raw) if meta_raw else None
+
         try:
             result = await self.creation_engine.run(
                 product_data,
                 competitor_data,
                 sourcing_data,
                 self.state.engine_data.get("initial_input", {}),
+                meta_ads_data=meta_ads_data,
             )
             self.state.engine_data[stage] = result.model_dump()
             await self.log_and_stream(f"{label} complete.", stage=stage)
 
             if self.db:
                 try:
+                    all_images = list(result.hero_image_urls or []) + list(result.product_image_urls or [])
                     self.db.add(StageCommerceData(
                         run_id=uuid.UUID(self.run_id),
-                        seo_titles=result.seo_titles,
-                        product_description=result.product_description,
-                        bullet_benefits=result.bullet_benefits,
-                        tags=result.tags,
-                        ad_copy_hooks=result.ad_copy_hooks,
-                        image_urls=result.generated_image_urls,
+                        seo_titles=[result.theme_name],
+                        product_description=result.hero_headline or result.theme_name,
+                        bullet_benefits=[result.hero_subheadline] if result.hero_subheadline else [],
+                        tags=[result.theme_slug],
+                        ad_copy_hooks=[],
+                        image_urls=all_images,
                     ))
                     await self.db.commit()
                 except Exception as e:
@@ -507,17 +518,29 @@ class AgentRunner:
         label = STAGE_LABELS[stage]
         query = self.state.engine_data.get("initial_input", {}).get("query", "Unknown")
 
-        product_name = query
-        pi = self.state.engine_data.get(EngineStage.PRODUCT_INTELLIGENCE.value)
-        if pi:
-            product_name = pi.get("product_name", query) if isinstance(pi, dict) else query
+        product_data = self._get_stage_data(EngineStage.PRODUCT_INTELLIGENCE.value, ProductIntelligenceOutput)
 
+        competitor_raw = self.state.engine_data.get(EngineStage.COMPETITOR_INTELLIGENCE.value)
+        sourcing_raw = self.state.engine_data.get(EngineStage.PRODUCT_SOURCING.value)
+        competitor_data = (
+            CompetitorIntelligenceOutput.model_validate(competitor_raw)
+            if competitor_raw else self._stub_competitor_data(product_data)
+        )
+        sourcing_data = (
+            ProductSourcingOutput.model_validate(sourcing_raw)
+            if sourcing_raw else self._stub_sourcing_data(product_data)
+        )
+
+        product_name = product_data.product_name or query
         await self.log_and_stream(f"Starting {label} for: {product_name}", stage=stage)
 
         try:
             result = await self.meta_ads_engine.run(
                 product_name,
                 self.state.engine_data.get("initial_input", {}),
+                product_data=product_data,
+                competitor_data=competitor_data,
+                sourcing_data=sourcing_data,
             )
             self.state.engine_data[stage] = result.model_dump()
             self.state.engine_data[f"{stage}_research"] = self.meta_ads_engine.research_summary

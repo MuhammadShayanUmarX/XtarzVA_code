@@ -45,19 +45,19 @@ const CREW = [
  'Calculates unit costs and MOQ requirements',
  'Ranks suppliers by trust score and speed'
  ]},
- { id: 'commerce_creation', name: 'Commerce Creation', icon: TrendingUp, color: 'emerald', tasks: 1860, time: '25s', success: '99.1%', status: 'idle', feed: [
- 'Alex: Content Optimization Engine',
- 'Optimizes SEO titles for conversion',
- 'Generates high-converting product descriptions',
- 'Structures FAQ from customer pain points',
- 'Stages AI-generated product imagery'
+ { id: 'meta_ads_spy', name: 'Ad Creative', icon: Zap, color: 'violet', tasks: 1860, time: '25s', success: '99.1%', status: 'idle', feed: [
+ 'SEO titles, meta descriptions, and Shopify tags',
+ 'Product creative copy and bullet benefits',
+ 'Ad hooks, UGC scripts, and Meta ad units',
+ 'Competitor ad research via SerpAPI & Tavily',
+ 'Creative images via Google Imagen'
  ]},
- { id: 'meta_ads_spy', name: 'Meta Ad Creative', icon: Zap, color: 'primary', tasks: 650, time: '14s', success: '100%', status: 'idle', feed: [
- 'Meta: Ad Creative Engine',
- 'Generates high-converting visual ad creatives',
- 'Writes dynamic scroll-stopping hooks',
- 'Optimizes ad copy for Facebook & Instagram',
- 'Scores potential performance CTR'
+ { id: 'commerce_creation', name: 'Store Builder', icon: TrendingUp, color: 'emerald', tasks: 650, time: '35s', success: '100%', status: 'idle', feed: [
+ 'Builds uploadable Shopify OS 2.0 theme ZIP',
+ 'Populates sections, templates, and settings',
+ 'Generates hero and product theme assets',
+ 'Merges Ad Creative copy into product import JSON',
+ 'Theme upload via Shopify Admin → Themes'
  ]}
 ]
 

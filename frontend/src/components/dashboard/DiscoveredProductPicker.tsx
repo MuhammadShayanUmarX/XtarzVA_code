@@ -19,7 +19,7 @@ interface DiscoveredProduct {
 }
 
 interface DiscoveredProductPickerProps {
-  targetStage: 'competitor_intelligence' | 'product_sourcing' | 'commerce_creation'
+  targetStage: 'competitor_intelligence' | 'product_sourcing' | 'meta_ads_spy' | 'commerce_creation'
   title?: string
   description?: string
   className?: string
@@ -30,6 +30,7 @@ interface DiscoveredProductPickerProps {
 const STAGE_LABELS: Record<string, string> = {
   competitor_intelligence: 'Competitor Intel',
   product_sourcing: 'Sourcing',
+  meta_ads_spy: 'Ad Creative',
   commerce_creation: 'Store Builder',
 }
 

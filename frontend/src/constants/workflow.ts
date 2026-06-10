@@ -6,8 +6,8 @@ export const AGENT_HOME_PATHS: Record<string, string> = {
   product_intelligence: '/dashboard/products',
   competitor_intelligence: '/dashboard/insights',
   product_sourcing: '/dashboard/sourcing',
-  commerce_creation: '/dashboard/shopify',
   meta_ads_spy: '/dashboard/ads',
+  commerce_creation: '/dashboard/shopify',
 }
 
 export const WORKFLOW_AGENTS: AgentStep[] = [
@@ -33,18 +33,18 @@ export const WORKFLOW_AGENTS: AgentStep[] = [
     description: 'Find suppliers on Alibaba, AliExpress, and CJ Dropshipping.',
   },
   {
-    id: 'commerce_creation',
-    name: 'Store Builder',
-    icon: TrendingUp,
-    color: 'emerald',
-    description: 'Generate SEO titles, descriptions, and ad copy for your store.',
-  },
-  {
     id: 'meta_ads_spy',
     name: 'Ad Creative',
     icon: Megaphone,
     color: 'violet',
-    description: 'Generate scroll-stopping ad hooks and creative strategy.',
+    description: 'SEO, product copy, tags, ad hooks, UGC scripts, and Meta ad creatives.',
+  },
+  {
+    id: 'commerce_creation',
+    name: 'Store Builder',
+    icon: TrendingUp,
+    color: 'emerald',
+    description: 'Build and download a complete uploadable Shopify theme ZIP.',
   },
   {
     id: 'auto_posting',

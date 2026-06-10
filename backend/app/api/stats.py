@@ -9,6 +9,7 @@ from ..core.database import get_db
 from ..core.auth import get_current_user
 from ..models.models import Run, User
 from ..models.schemas import EngineStage
+from ..services.activity_summary import build_activity_summary, compute_activity_totals
 
 router = APIRouter()
 
@@ -96,12 +97,19 @@ async def get_overview(
 @router.get("/analytics")
 async def get_analytics(
     range: str = Query("7d", alias="range"),
+    agent: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
     days = RANGE_DAYS.get(range, 7)
     runs = await _get_user_runs(db, current_user)
     filtered = [r for r in runs if _in_range(r.created_at, days)]
+
+    if agent:
+        filtered = [r for r in filtered if (r.agent or r.current_stage) == agent]
+    if status:
+        filtered = [r for r in filtered if r.status == status]
 
     daily: Dict[str, Dict[str, int]] = defaultdict(lambda: {"runs": 0, "products_found": 0})
     niche_counter: Counter = Counter()
@@ -169,6 +177,9 @@ async def get_analytics(
 
     mean_margin = round(sum(margins) / len(margins), 1) if margins else None
 
+    activity_runs = [build_activity_summary(r) for r in filtered]
+    totals = compute_activity_totals(activity_runs)
+
     return {
         "total_runs": len(filtered),
         "total_products_saved": sum(1 for r in filtered if _has_stage(r.engine_data or {}, EngineStage.PRODUCT_INTELLIGENCE.value)),
@@ -178,4 +189,6 @@ async def get_analytics(
         "mean_margin": mean_margin,
         "stage_breakdown": dict(stage_counts),
         "completed_runs": sum(1 for r in filtered if r.status == "completed"),
+        "activity_runs": activity_runs,
+        "totals": totals,
     }

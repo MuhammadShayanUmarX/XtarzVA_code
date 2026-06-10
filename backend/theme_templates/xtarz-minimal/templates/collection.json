@@ -1,0 +1,20 @@
+{
+  "sections": {
+    "header": {
+      "type": "header",
+      "settings": {}
+    },
+    "main": {
+      "type": "rich-text",
+      "settings": {
+        "heading": "Our Collection",
+        "body": "<p>Browse our curated selection.</p>"
+      }
+    },
+    "footer": {
+      "type": "footer",
+      "settings": {}
+    }
+  },
+  "order": ["header", "main", "footer"]
+}

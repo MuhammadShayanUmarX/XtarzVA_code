@@ -95,6 +95,20 @@ class MetaAdsSpyOutput(BaseModel):
     active_ads: List[TrackedAd]
     winning_hooks: List[str]
     recommended_strategy: str
+    # Product marketing pack (moved from Store Builder)
+    seo_titles: List[str] = []
+    seo_meta_title: str = ""
+    seo_meta_description: str = ""
+    product_title: str = ""
+    product_creative_description: str = ""
+    product_creative_description_html: str = ""
+    bullet_benefits: List[str] = []
+    tags: List[str] = []
+    faqs: List[Dict[str, str]] = []
+    ad_copy_hooks: List[str] = []
+    ugc_scripts: List[str] = []
+    creative_image_prompts: List[str] = []
+    creative_image_urls: List[str] = []
 
 
 class SupplierInfo(BaseModel):
@@ -124,27 +138,31 @@ class ProductVariant(BaseModel):
 
 
 class CommerceCreationOutput(BaseModel):
-    seo_titles: List[str]
-    product_description: str
-    bullet_benefits: List[str]
-    tags: List[str]
-    faqs: List[Dict[str, str]] = []
-    ad_copy_hooks: List[str]
-    ugc_scripts: List[str] = []
-    image_generation_prompts: List[str] = []
-    generated_image_urls: List[str] = []
-    # Shopify-ready assets
-    product_title: str = ""
-    seo_meta_title: str = ""
-    seo_meta_description: str = ""
-    product_description_html: str = ""
+    theme_name: str = "XtarzVA Store"
+    theme_slug: str = "xtarz-store"
+    design_direction: str = ""
+    settings_data: Dict[str, Any] = {}
+    homepage_sections: Dict[str, Any] = {}
+    theme_colors: Dict[str, str] = {}
+    hero_headline: str = ""
+    hero_subheadline: str = ""
+    hero_button_label: str = "Shop the collection"
+    about_snippet: str = ""
     collection_title: str = ""
     collection_description: str = ""
-    homepage_hero_headline: str = ""
-    homepage_hero_subheadline: str = ""
-    about_page_snippet: str = ""
+    trust_heading: str = ""
+    trust_points: List[str] = []
+    testimonial_quote: str = ""
+    testimonial_author: str = ""
+    image_generation_prompts: List[str] = []
+    hero_image_urls: List[str] = []
+    product_image_urls: List[str] = []
+    hero_image_assets: List[str] = []
+    product_image_assets: List[str] = []
+    theme_image_payloads: Dict[str, str] = {}
+    product_handle: str = ""
+    collection_handle: str = ""
     variants: List[ProductVariant] = []
-    store_theme_json: Dict[str, Any] = {}
 
 
 class SelectProductRequest(BaseModel):

@@ -3,6 +3,7 @@ import json
 from typing import Dict, Any, List, Optional
 from ..models.schemas import CompetitorIntelligenceOutput, ProductIntelligenceOutput
 from ..core.llm import call_with_fallback
+from ..core.prompt_loader import build_system_prompt, build_user_prompt, get_max_prompt_chars, get_user_task
 from ..core.tools import research_tools
 from ..core.result_normalizer import (
     MAX_ROWS,
@@ -12,7 +13,7 @@ from ..core.result_normalizer import (
 
 logger = logging.getLogger(__name__)
 
-MAX_PROMPT_CHARS = 3500
+AGENT_ID = "competitor_intelligence"
 
 
 class CompetitorIntelligenceEngine:
@@ -118,27 +119,13 @@ class CompetitorIntelligenceEngine:
         scraped_for_llm = [p.model_dump() for p in scraped_profiles[:MAX_ROWS]]
         competitor_context = self._prune_data({"competitors": scraped_for_llm}, max_chars=150)
 
-        system_prompt = (
-            "You are a competitive intelligence analyst. Analyze competitor data and identify market gaps.\n\n"
-            "You MUST return ONLY a JSON object with EXACTLY these 6 keys. No other keys allowed.\n\n"
-            "EXACT SCHEMA (copy these field names EXACTLY):\n"
-            '{"competitor_weaknesses":["weakness 1","weakness 2"],'
-            '"pricing_gaps":["gap 1","gap 2"],'
-            '"SEO_gaps":["seo gap 1","seo gap 2"],'
-            '"product_opportunities":["opportunity 1","opportunity 2"],'
-            '"market_saturation_score":45,'
-            '"competitors":[{"store_name":"","store_url":"","platform":"","price":"","price_range":"",'
-            '"positioning":"","threat_level":"Low|Medium|High","is_shopify":false,"notes":""}]}\n\n'
-            "RULES:\n"
-            "- competitors: enrich the provided competitor list with positioning and threat_level\n"
-            "- market_saturation_score: integer 0-100\n"
-            "- DO NOT add any extra keys"
-        )
+        system_prompt = build_system_prompt(AGENT_ID)
+        task = get_user_task(AGENT_ID)
+        max_prompt_chars = get_max_prompt_chars(AGENT_ID)
 
         data_json = json.dumps(competitor_context, separators=(',', ':'))
-        max_data_chars = MAX_PROMPT_CHARS - len(
-            f"PRODUCT:{product_name}\nReturn JSON with competitor analysis and competitors array.\nDATA:"
-        )
+        user_prefix = f"PRODUCT:{product_name}\n{task}\nDATA:"
+        max_data_chars = max_prompt_chars - len(user_prefix)
         if len(data_json) > max_data_chars:
             data_json = data_json[:max_data_chars]
 
@@ -152,16 +139,18 @@ class CompetitorIntelligenceEngine:
         elif competitor_url:
             brief_parts.append(f"Competitor URL: {competitor_url}")
         brief = "\n".join(brief_parts)
+        brief_block = f"BRIEF:\n{brief}\n" if brief else ""
 
-        user_prompt = (
-            f"PRODUCT:{product_name}\n"
-            + (f"BRIEF:\n{brief}\n" if brief else "")
-            + f"DATA:{data_json}\n"
-            "Return JSON with competitor analysis and competitors array."
+        user_prompt = build_user_prompt(
+            AGENT_ID,
+            product_name=product_name,
+            brief_block=brief_block,
+            data_json=data_json,
+            task=task,
         )
 
         output, provider = await call_with_fallback(
-            "competitor_intelligence", system_prompt, user_prompt, CompetitorIntelligenceOutput, "system_run"
+            AGENT_ID, system_prompt, user_prompt, CompetitorIntelligenceOutput, "system_run"
         )
 
         self.competitor_profiles = merge_competitor_profiles(scraped_profiles, output.competitors)

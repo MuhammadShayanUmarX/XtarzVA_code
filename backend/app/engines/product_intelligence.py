@@ -4,6 +4,7 @@ import json
 from typing import Dict, Any, List, Callable, Awaitable, Optional
 from ..models.schemas import ProductIntelligenceOutput
 from ..core.llm import call_with_fallback
+from ..core.prompt_loader import build_system_prompt, build_user_prompt, get_max_prompt_chars, get_user_task
 from ..core.tools import research_tools
 from ..core.result_normalizer import (
     MAX_ROWS,
@@ -13,7 +14,7 @@ from ..core.result_normalizer import (
 
 logger = logging.getLogger(__name__)
 
-MAX_PROMPT_CHARS = 3500
+AGENT_ID = "product_intelligence"
 ProgressCallback = Callable[[str, int], Awaitable[None]]
 
 
@@ -137,27 +138,20 @@ class ProductIntelligenceEngine:
 
         await progress("Analyzing signals with AI...", 75)
 
-        condensed_persona = "You are a product research analyst. Decisive, data-driven, expert in e-commerce market trends."
-        system_prompt = (
-            f"{condensed_persona}\n"
-            "Identify a 'Tier-1' commerce opportunity from the research data. "
-            "\n\nCRITICAL: trend_score, demand_score, and competition_score MUST be INTEGERS between 0 and 100. "
-            "\nDO NOT return decimals like 0.99. Return 99."
-            "\n\nOUTPUT: Valid JSON only. Raw numbers. No units."
-            "\nSCHEMA:"
-            "\n{\"product_name\":\"\",\"product_category\":\"\",\"trend_score\":85,\"demand_score\":90,"
-            "\"competition_score\":30,\"estimated_margin\":45.0,\"risk_level\":\"Low\",\"evidence_sources\":[],\"reasoning\":\"\"}"
-        )
+        system_prompt = build_system_prompt(AGENT_ID)
+        task = get_user_task(AGENT_ID)
+        max_prompt_chars = get_max_prompt_chars(AGENT_ID)
 
         data_json = json.dumps(research_context, separators=(",", ":"))
-        max_data_chars = MAX_PROMPT_CHARS - len(f"TARGET:{query}\nTASK:Pick best product. Return JSON (Integers for scores).\nDATA:")
+        user_prefix = f"TARGET:{query}\nTASK:{task}\nDATA:"
+        max_data_chars = max_prompt_chars - len(user_prefix)
         if len(data_json) > max_data_chars:
             data_json = data_json[:max_data_chars]
 
-        user_prompt = f"TARGET:{query}\nDATA:{data_json}\nTASK:Pick best product. Return JSON (Integers for scores)."
+        user_prompt = build_user_prompt(AGENT_ID, query=query, data_json=data_json, task=task)
 
         output, provider = await call_with_fallback(
-            "product_intelligence", system_prompt, user_prompt, ProductIntelligenceOutput, run_id
+            AGENT_ID, system_prompt, user_prompt, ProductIntelligenceOutput, run_id
         )
 
         self.product_candidates = mark_recommended_product(candidates, output.product_name)

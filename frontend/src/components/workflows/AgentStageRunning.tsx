@@ -10,6 +10,27 @@ interface AgentStageRunningProps {
  scrollRef: RefObject<HTMLDivElement>
 }
 
+function getProgressLabel(agentId: string, progress: number): string {
+ if (agentId === 'meta_ads_spy') {
+  if (progress < 25) return 'Researching competitor ads...'
+  if (progress < 55) return 'Generating SEO copy and creatives...'
+  return 'Building ad images with Imagen...'
+ }
+ if (agentId === 'commerce_creation') {
+  if (progress < 25) return 'Building theme structure...'
+  if (progress < 55) return 'Configuring Shopify sections...'
+  return 'Generating theme assets with Imagen...'
+ }
+ if (agentId === 'product_intelligence') {
+  if (progress < 20) return 'Connecting research APIs...'
+  if (progress < 60) return 'Scanning TikTok, Reddit, Amazon & web...'
+  return 'Analyzing with AI...'
+ }
+ if (progress < 20) return 'Connecting research APIs...'
+ if (progress < 60) return 'Gathering intelligence signals...'
+ return 'Analyzing with AI...'
+}
+
 export default function AgentStageRunning({ agent, progress, logs, scrollRef }: AgentStageRunningProps) {
  return (
  <motion.div 
@@ -29,7 +50,7 @@ export default function AgentStageRunning({ agent, progress, logs, scrollRef }: 
  <div className="flex items-center gap-4">
  <div className="w-10 h-10 rounded-full border-4 border-landing-divider border-t-accent-primary animate-spin" />
  <span className="text-sm font-black text-white tracking-tight">
- {progress < 20 ? 'Connecting research APIs...' : progress < 60 ? 'Scanning TikTok, Reddit, Amazon & web...' : 'Analyzing with AI...'}
+ {getProgressLabel(agent.id, progress)}
  </span>
  </div>
  <span className="text-2xl font-black text-white tabular-nums">{progress}%</span>

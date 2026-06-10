@@ -2,10 +2,10 @@ import { ArrowRight, ShoppingBag, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const WHAT_GETS_DONE = [
-  "Product images and videos ready to go",
-  "SEO-optimized titles and descriptions",
-  "Pricing and margins already set",
-  "Variants and inventory configured"
+  "Complete Shopify OS 2.0 theme ZIP",
+  "Branded sections, templates, and assets",
+  "Product import JSON with SEO from Ad Creative",
+  "Upload directly in Shopify Admin → Themes"
 ]
 
 export default function ShopifyDeployment() {
@@ -26,7 +26,7 @@ export default function ShopifyDeployment() {
             </h2>
             
             <p className="text-landing-secondary text-lg leading-relaxed">
-              No more copy-pasting product details or formatting images by hand. Once you find a winning product, everything gets pushed straight to your Shopify store — ready for customers.
+              Download a full uploadable Shopify theme ZIP — layout, sections, hero assets, and product import file. Upload in minutes, then publish when ready.
             </p>
 
             <ul className="space-y-4 pt-4">

@@ -5,8 +5,10 @@ Agentic commerce research API. Five independent agents (no monolithic pipeline):
 - **Product Discovery** — find winning products
 - **Competitor Intel** — analyze market gaps (import product from Discovery)
 - **Sourcing** — find suppliers (import product from Discovery)
-- **Store Builder** — generate store content
-- **Ad Creative** — generate ad copy and hooks
+- **Ad Creative** — SEO, product copy, tags, ad hooks, UGC, Meta ads (Gemini + Imagen)
+- **Store Builder** — uploadable Shopify OS 2.0 theme ZIP
+
+Requires `GOOGLE_API_KEY` in `.env` (see `.env.example`).
 
 ## Start
 
