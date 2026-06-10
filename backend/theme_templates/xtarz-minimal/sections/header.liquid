@@ -1,0 +1,22 @@
+<header class="xtarz-header">
+  <div class="xtarz-container xtarz-header__inner">
+    <a href="{{ routes.root_url }}" class="xtarz-header__logo">{{ section.settings.logo_text }}</a>
+    <nav>
+      <a href="{{ routes.all_products_collection_url }}" class="xtarz-header__nav">Shop</a>
+    </nav>
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "text",
+      "id": "logo_text",
+      "label": "Logo text",
+      "default": "Brand"
+    }
+  ]
+}
+{% endschema %}

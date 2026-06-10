@@ -1,0 +1,49 @@
+<section class="xtarz-hero">
+  <div class="xtarz-container">
+    <div class="xtarz-hero__grid">
+      <div class="xtarz-hero__content">
+        <h1>{{ section.settings.headline }}</h1>
+        <p>{{ section.settings.subheadline }}</p>
+        {% if section.settings.button_label != blank %}
+          <a href="{{ section.settings.button_link | default: routes.all_products_collection_url }}" class="xtarz-btn">
+            {{ section.settings.button_label }}
+          </a>
+        {% endif %}
+      </div>
+      <div class="xtarz-hero__image-wrap">
+        {% if section.settings.hero_image != blank %}
+          <img
+            class="xtarz-hero__image"
+            src="{{ section.settings.hero_image | image_url: width: 1200 }}"
+            alt="{{ section.settings.headline | escape }}"
+            width="1200"
+            loading="eager"
+          >
+        {% elsif section.settings.hero_image_asset != blank %}
+          <img
+            class="xtarz-hero__image"
+            src="{{ section.settings.hero_image_asset | asset_url }}"
+            alt="{{ section.settings.headline | escape }}"
+            width="1200"
+            loading="eager"
+          >
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Hero Banner",
+  "settings": [
+    { "type": "text", "id": "headline", "label": "Headline", "default": "Crafted for everyday excellence" },
+    { "type": "textarea", "id": "subheadline", "label": "Subheadline", "default": "Thoughtfully designed products that elevate your daily routine." },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Shop the collection" },
+    { "type": "url", "id": "button_link", "label": "Button link" },
+    { "type": "image_picker", "id": "hero_image", "label": "Hero image" },
+    { "type": "text", "id": "hero_image_asset", "label": "Hero image asset filename", "default": "hero-1.jpg" }
+  ],
+  "presets": [{ "name": "Hero Banner" }]
+}
+{% endschema %}

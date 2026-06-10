@@ -23,6 +23,42 @@ class WorkflowState(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.now)
 
 
+class ProductCandidate(BaseModel):
+    product_name: str
+    platform: str
+    source_url: str = ""
+    price: Optional[str] = None
+    currency: str = "USD"
+    demand_signal: Optional[str] = None
+    category: Optional[str] = None
+    snippet: Optional[str] = None
+    is_recommended: bool = False
+
+
+class CompetitorProfile(BaseModel):
+    store_name: str
+    store_url: str
+    platform: str
+    price: Optional[str] = None
+    price_range: Optional[str] = None
+    positioning: Optional[str] = None
+    threat_level: Optional[str] = None
+    is_shopify: bool = False
+    notes: Optional[str] = None
+
+
+class SourcingOption(BaseModel):
+    supplier_name: str
+    platform: str
+    product_url: str = ""
+    price_per_unit: Optional[float] = None
+    moq: Optional[int] = None
+    country: Optional[str] = None
+    shipping_time: Optional[str] = None
+    supplier_rating: Optional[float] = None
+    is_recommended: bool = False
+
+
 class ProductIntelligenceOutput(BaseModel):
     product_name: str
     product_category: str
@@ -41,6 +77,7 @@ class CompetitorIntelligenceOutput(BaseModel):
     SEO_gaps: List[str]
     product_opportunities: List[str]
     market_saturation_score: int = Field(ge=0, le=100)
+    competitors: List[CompetitorProfile] = []
 
 
 class TrackedAd(BaseModel):
@@ -58,6 +95,20 @@ class MetaAdsSpyOutput(BaseModel):
     active_ads: List[TrackedAd]
     winning_hooks: List[str]
     recommended_strategy: str
+    # Product marketing pack (moved from Store Builder)
+    seo_titles: List[str] = []
+    seo_meta_title: str = ""
+    seo_meta_description: str = ""
+    product_title: str = ""
+    product_creative_description: str = ""
+    product_creative_description_html: str = ""
+    bullet_benefits: List[str] = []
+    tags: List[str] = []
+    faqs: List[Dict[str, str]] = []
+    ad_copy_hooks: List[str] = []
+    ugc_scripts: List[str] = []
+    creative_image_prompts: List[str] = []
+    creative_image_urls: List[str] = []
 
 
 class SupplierInfo(BaseModel):
@@ -68,6 +119,7 @@ class SupplierInfo(BaseModel):
     shipping_time: str
     supplier_rating: float
     product_url: str
+    country: Optional[str] = None
 
 
 class ProductSourcingOutput(BaseModel):
@@ -86,27 +138,31 @@ class ProductVariant(BaseModel):
 
 
 class CommerceCreationOutput(BaseModel):
-    seo_titles: List[str]
-    product_description: str
-    bullet_benefits: List[str]
-    tags: List[str]
-    faqs: List[Dict[str, str]] = []
-    ad_copy_hooks: List[str]
-    ugc_scripts: List[str] = []
-    image_generation_prompts: List[str] = []
-    generated_image_urls: List[str] = []
-    # Shopify-ready assets
-    product_title: str = ""
-    seo_meta_title: str = ""
-    seo_meta_description: str = ""
-    product_description_html: str = ""
+    theme_name: str = "XtarzVA Store"
+    theme_slug: str = "xtarz-store"
+    design_direction: str = ""
+    settings_data: Dict[str, Any] = {}
+    homepage_sections: Dict[str, Any] = {}
+    theme_colors: Dict[str, str] = {}
+    hero_headline: str = ""
+    hero_subheadline: str = ""
+    hero_button_label: str = "Shop the collection"
+    about_snippet: str = ""
     collection_title: str = ""
     collection_description: str = ""
-    homepage_hero_headline: str = ""
-    homepage_hero_subheadline: str = ""
-    about_page_snippet: str = ""
+    trust_heading: str = ""
+    trust_points: List[str] = []
+    testimonial_quote: str = ""
+    testimonial_author: str = ""
+    image_generation_prompts: List[str] = []
+    hero_image_urls: List[str] = []
+    product_image_urls: List[str] = []
+    hero_image_assets: List[str] = []
+    product_image_assets: List[str] = []
+    theme_image_payloads: Dict[str, str] = {}
+    product_handle: str = ""
+    collection_handle: str = ""
     variants: List[ProductVariant] = []
-    store_theme_json: Dict[str, Any] = {}
 
 
 class SelectProductRequest(BaseModel):

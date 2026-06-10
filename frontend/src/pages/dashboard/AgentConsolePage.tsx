@@ -32,8 +32,8 @@ const AGENTS_CONFIG: Record<string, any> = {
  product_intelligence: { name: 'Product Intelligence', icon: Search, color: 'cyan', role: 'Market Discovery & Trend Analysis' },
  competitor_intelligence: { name: 'Competitor Intelligence', icon: Target, color: 'rose', role: 'Competitor Benchmarking & Pricing' },
  product_sourcing: { name: 'Product Sourcing', icon: Package, color: 'indigo', role: 'Supplier Verification & Cost Analysis' },
- commerce_creation: { name: 'Commerce Creation', icon: TrendingUp, color: 'emerald', role: 'Content Optimization & Asset Generation' },
- meta_ads_spy: { name: 'Meta Ad Creative', icon: Zap, color: 'primary', role: 'High-converting Visual & Copy Generation' },
+ meta_ads_spy: { name: 'Ad Creative', icon: Zap, color: 'violet', role: 'SEO, Product Copy, Tags & Meta Ads' },
+ commerce_creation: { name: 'Store Builder', icon: TrendingUp, color: 'emerald', role: 'Shopify OS 2.0 Theme Generation' },
 }
 
 export default function AgentConsolePage() {

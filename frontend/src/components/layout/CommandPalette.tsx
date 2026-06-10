@@ -59,8 +59,8 @@ export default function CommandPalette({ open, setOpen }: { open: boolean, setOp
                 <CommandItem icon={Sparkles} label="Product Discovery" sub="Find winning products" onSelect={() => runCommand(() => navigate('/dashboard/products'))} />
                 <CommandItem icon={Store} label="Competitor Intel" sub="Research your competition" onSelect={() => runCommand(() => navigate('/dashboard/insights'))} />
                 <CommandItem icon={Package} label="Source Suppliers" sub="Find the best margins" onSelect={() => runCommand(() => navigate('/dashboard/sourcing'))} />
-                <CommandItem icon={Megaphone} label="Ad Creative" sub="Generate ad copy and hooks" onSelect={() => runCommand(() => navigate('/dashboard/ads'))} />
-                <CommandItem icon={Wand2} label="Store Builder" sub="Launch on Shopify" onSelect={() => runCommand(() => navigate('/dashboard/shopify'))} />
+                <CommandItem icon={Megaphone} label="Ad Creative" sub="SEO, copy, tags, and Meta ads" onSelect={() => runCommand(() => navigate('/dashboard/ads'))} />
+                <CommandItem icon={Wand2} label="Store Builder" sub="Download Shopify theme ZIP" onSelect={() => runCommand(() => navigate('/dashboard/shopify'))} />
               </Command.Group>
 
               <Command.Group heading="Navigation" className="text-[11px] font-black text-landing-muted px-4 py-3 tracking-tight mt-4">

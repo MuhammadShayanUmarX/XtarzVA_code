@@ -28,6 +28,47 @@ import { AgentStep } from '../../types/workflow'
 import { cn } from '../../lib/utils'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
+import ResultsDataTable, { LinkCell, TableColumn } from './ResultsDataTable'
+import type { ProductCandidate, CompetitorProfile, SourcingOption } from '../../types/agents'
+
+const PRODUCT_COLUMNS: TableColumn<ProductCandidate>[] = [
+  { key: 'product_name', label: 'Product', className: 'max-w-[200px]', render: (r) => (
+    <span className={cn('font-bold text-white line-clamp-2', r.is_recommended && 'text-accent-amber')}>{r.product_name}</span>
+  )},
+  { key: 'platform', label: 'Platform' },
+  { key: 'price', label: 'Price', render: (r) => r.price || '—' },
+  { key: 'demand_signal', label: 'Demand', render: (r) => r.demand_signal || '—' },
+  { key: 'source_url', label: 'Link', render: (r) => <LinkCell url={r.source_url} /> },
+]
+
+const COMPETITOR_COLUMNS: TableColumn<CompetitorProfile>[] = [
+  { key: 'store_name', label: 'Store', render: (r) => (
+    <span className="font-bold text-white line-clamp-1">{r.store_name}</span>
+  )},
+  { key: 'platform', label: 'Platform' },
+  { key: 'price', label: 'Price', render: (r) => r.price || r.price_range || '—' },
+  { key: 'positioning', label: 'Positioning', render: (r) => r.positioning || '—' },
+  { key: 'threat_level', label: 'Threat', render: (r) => (
+    <span className={cn(
+      'font-black uppercase text-[10px]',
+      r.threat_level === 'High' ? 'text-accent-rose' :
+      r.threat_level === 'Medium' ? 'text-accent-amber' : 'text-accent-emerald'
+    )}>{r.threat_level || '—'}</span>
+  )},
+  { key: 'store_url', label: 'Link', render: (r) => <LinkCell url={r.store_url} /> },
+]
+
+const SOURCING_COLUMNS: TableColumn<SourcingOption>[] = [
+  { key: 'supplier_name', label: 'Supplier', render: (r) => (
+    <span className={cn('font-bold text-white line-clamp-1', r.is_recommended && 'text-accent-amber')}>{r.supplier_name}</span>
+  )},
+  { key: 'platform', label: 'Platform' },
+  { key: 'country', label: 'Country', render: (r) => r.country || '—' },
+  { key: 'moq', label: 'MOQ', render: (r) => r.moq != null ? `${r.moq} units` : '—' },
+  { key: 'price_per_unit', label: 'Unit Price', render: (r) => r.price_per_unit != null ? `$${r.price_per_unit}` : '—' },
+  { key: 'shipping_time', label: 'Shipping', render: (r) => r.shipping_time || '—' },
+  { key: 'product_url', label: 'Link', render: (r) => <LinkCell url={r.product_url} /> },
+]
 
 interface AgentStageReportProps {
  agent: AgentStep
@@ -45,25 +86,26 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  const navigate = useNavigate()
  const [importing, setImporting] = useState<string | null>(null)
  const [downloading, setDownloading] = useState(false)
- const [activeTab, setActiveTab] = useState<'copy' | 'marketing' | 'visuals'>('copy')
+ const [storeTab, setStoreTab] = useState<'preview' | 'assets' | 'import'>('preview')
+ const [adTab, setAdTab] = useState<'seo' | 'copy' | 'hooks' | 'ads' | 'images'>('seo')
 
  const handleDownloadStore = async () => {
   if (!runId) return
   setDownloading(true)
   try {
-   const res = await api.get(`/v2/runs/${runId}/store-export`, { responseType: 'blob' })
+   const res = await api.get(`/v2/runs/${runId}/theme-export`, { responseType: 'blob' })
    const disposition = res.headers['content-disposition'] || ''
    const match = disposition.match(/filename="?([^"]+)"?/)
-   const filename = match?.[1] || `store-${runId.slice(0, 8)}.zip`
+   const filename = match?.[1] || `theme-${runId.slice(0, 8)}.zip`
    const url = URL.createObjectURL(res.data)
    const a = document.createElement('a')
    a.href = url
    a.download = filename
    a.click()
    URL.revokeObjectURL(url)
-   toast.success('Store ZIP downloaded!')
+   toast.success('Theme ZIP downloaded!')
   } catch (err: any) {
-   toast.error(err.response?.data?.detail || 'Failed to download store ZIP')
+   toast.error(err.response?.data?.detail || 'Failed to download theme ZIP')
   } finally {
    setDownloading(false)
   }
@@ -110,6 +152,22 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
 
  const redditSource = researchData?.find(r => r.source.includes('Reddit') || r.source.includes('💬'));
  const redditSignals = redditSource?.highlights || [];
+
+ const productCandidates: ProductCandidate[] = fullEngineData?.product_candidates || [];
+ const competitorProfiles: CompetitorProfile[] = fullEngineData?.competitor_profiles || [];
+ const sourcingOptions: SourcingOption[] = fullEngineData?.sourcing_options?.length
+   ? fullEngineData.sourcing_options
+   : (fullEngineData?.product_sourcing?.suppliers || []).map((s: SourcingOption & { product_url?: string }) => ({
+     supplier_name: s.supplier_name,
+     platform: s.platform,
+     product_url: s.product_url || '',
+     price_per_unit: s.price_per_unit,
+     moq: s.moq,
+     country: s.country,
+     shipping_time: s.shipping_time,
+     supplier_rating: s.supplier_rating,
+     is_recommended: s.supplier_name === fullEngineData?.product_sourcing?.best_option?.supplier_name,
+   }));
 
  return (
  <motion.div 
@@ -236,6 +294,14 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  </div>
  </div>
 
+ <ResultsDataTable
+   title="Discovered Products"
+   subtitle="All products found across Amazon, TikTok Shop, Web, and Reddit sources. Highlighted row is the AI-recommended winner."
+   columns={PRODUCT_COLUMNS}
+   rows={productCandidates}
+   emptyMessage="No structured product listings were captured for this run."
+ />
+
  {/* TikTok & Reddit deep research showcases */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
  {/* TikTok Shop Wave card */}
@@ -295,6 +361,15 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  <p className="text-xs text-landing-secondary">Deep website audits, search saturation indexes, and target pricing gap analysis.</p>
  </div>
  </div>
+
+ <ResultsDataTable
+   title="Competitor Stores"
+   subtitle="All competitors discovered from Amazon, TikTok Shop, web search, and website audits."
+   columns={COMPETITOR_COLUMNS}
+   rows={competitorProfiles}
+   emptyMessage="No competitor store listings were captured for this run."
+   highlightKey=""
+ />
 
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
  {/* Saturation Meter Card */}
@@ -462,295 +537,104 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  </div>
  )}
 
- {/* Sourced supplier comparisons cards */}
- <div className="space-y-4">
- <span className="text-[10px] font-black text-landing-muted tracking-tight block">All Discovered Sourcing Options</span>
- <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
- {fullEngineData.product_sourcing.suppliers?.map((supplier: any, idx: number) => (
- <div 
- key={idx} 
- className={cn(
-"p-6 rounded-3xl bg-white/[0.01] border transition-all flex flex-col justify-between space-y-6 group hover:border-landing-divider",
- supplier.supplier_name === fullEngineData.product_sourcing.best_option?.supplier_name 
- ?"border-accent-amber/20 bg-accent-amber/[0.005]" 
- :"border-landing-divider"
- )}
- >
- <div className="space-y-4">
- <div className="flex justify-between items-center">
- <span className={cn(
-"px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
- supplier.platform === 'Alibaba' 
- ? 'bg-accent-indigo/10 text-accent-indigo border border-accent-indigo/20'
- : 'bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20'
- )}>
- {supplier.platform}
- </span>
- 
- <div className="flex items-center gap-1 text-[10px] text-accent-amber font-bold">
- <Star size={12} className="fill-current" />
- <span>{supplier.supplier_rating || '4.8'}</span>
- </div>
- </div>
-
- <div className="space-y-1">
- <h6 className="text-sm font-bold text-white group-hover:text-landing-accent transition-colors line-clamp-1">{supplier.supplier_name}</h6>
- <span className="text-[10px] text-landing-muted font-medium block">MOQ: {supplier.moq || 1} units</span>
- </div>
- </div>
-
- <div className="pt-4 border-t border-landing-divider flex justify-between items-center text-xs">
- <div>
- <span className="text-[8px] font-black text-landing-muted tracking-tight block">Unit Price</span>
- <span className="font-black text-white">${supplier.price_per_unit}</span>
- </div>
- <div className="text-right">
- <span className="text-[8px] font-black text-landing-muted tracking-tight block">Shipping</span>
- <span className="font-black text-landing-secondary">{supplier.shipping_time || '10-15d'}</span>
- </div>
- </div>
-
- {supplier.product_url && (
- <a 
- href={supplier.product_url} 
- target="_blank" 
- rel="noreferrer"
- className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-white/5 border border-landing-divider text-[10px] font-black tracking-tight text-landing-secondary hover:bg-white hover:text-black transition-all animate-none"
- >
- Inspect Product <ExternalLink size={10} />
- </a>
- )}
- </div>
- ))}
- </div>
- </div>
+ {/* Sourced supplier comparisons table */}
+ <ResultsDataTable
+   title="All Discovered Sourcing Options"
+   subtitle="Suppliers found on CJ Dropshipping, Alibaba, and AliExpress. Highlighted row is the recommended option."
+   columns={SOURCING_COLUMNS}
+   rows={sourcingOptions}
+   emptyMessage="No sourcing options were captured for this run."
+ />
  </div>
  )}
 
- {/* ─── STAGE 4: Commerce Creation High-Fidelity Showcase ─── */}
+ {/* ─── Store Builder: Shopify Theme ─── */}
  {agent.id === 'commerce_creation' && fullEngineData?.commerce_creation && (
  <div className="space-y-8 border-t border-landing-divider pt-10">
  <div className="flex items-center gap-3">
  <Sparkles className="text-accent-emerald animate-pulse" size={24} />
  <div>
- <h4 className="text-lg font-black text-white tracking-tight">Generated Launch Assets</h4>
- <p className="text-xs text-landing-secondary">Review brand copy, advertising materials, and generated photography.</p>
+ <h4 className="text-lg font-black text-white tracking-tight">Shopify Theme Package</h4>
+ <p className="text-xs text-landing-secondary">Uploadable OS 2.0 theme with sections, assets, and product import JSON.</p>
  </div>
  </div>
 
- {/* Tab Selectors */}
  <div className="grid grid-cols-3 gap-4">
- <button 
- onClick={() => setActiveTab('copy')}
+ {(['preview', 'assets', 'import'] as const).map((tab) => (
+ <button
+ key={tab}
+ onClick={() => setStoreTab(tab)}
  className={cn(
-"flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all",
- activeTab === 'copy' 
- ? 'bg-accent-emerald/10 border-accent-emerald/30 text-accent-emerald font-black shadow-lg shadow-accent-emerald/5' 
- : 'bg-white/[0.02] border-landing-divider text-landing-secondary hover:bg-white/[0.05] hover:text-white font-bold'
+ "flex items-center justify-center gap-2 p-4 rounded-2xl border transition-all text-[10px] font-bold tracking-tight",
+ storeTab === tab
+ ? 'bg-accent-emerald/10 border-accent-emerald/30 text-accent-emerald'
+ : 'bg-white/[0.02] border-landing-divider text-landing-secondary hover:text-white'
  )}
  >
- <FileText size={16} />
- <span className="text-[10px] tracking-tight hidden sm:inline">Brand Copy & Specs</span>
- <span className="text-[10px] tracking-tight sm:hidden">Copy</span>
+ {tab === 'preview' && <FileText size={16} />}
+ {tab === 'assets' && <Image size={16} />}
+ {tab === 'import' && <Package size={16} />}
+ {tab === 'preview' ? 'Theme Preview' : tab === 'assets' ? 'Theme Assets' : 'Product Import'}
  </button>
- <button 
- onClick={() => setActiveTab('marketing')}
- className={cn(
-"flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all",
- activeTab === 'marketing' 
- ? 'bg-accent-emerald/10 border-accent-emerald/30 text-accent-emerald font-black shadow-lg shadow-accent-emerald/5' 
- : 'bg-white/[0.02] border-landing-divider text-landing-secondary hover:bg-white/[0.05] hover:text-white font-bold'
- )}
- >
- <Megaphone size={16} />
- <span className="text-[10px] tracking-tight hidden sm:inline">Advertising & UGC</span>
- <span className="text-[10px] tracking-tight sm:hidden">Ads</span>
- </button>
- <button 
- onClick={() => setActiveTab('visuals')}
- className={cn(
-"flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all",
- activeTab === 'visuals' 
- ? 'bg-accent-emerald/10 border-accent-emerald/30 text-accent-emerald font-black shadow-lg shadow-accent-emerald/5' 
- : 'bg-white/[0.02] border-landing-divider text-landing-secondary hover:bg-white/[0.05] hover:text-white font-bold'
- )}
- >
- <Image size={16} />
- <span className="text-[10px] tracking-tight hidden sm:inline">Visual Assets</span>
- <span className="text-[10px] tracking-tight sm:hidden">Visuals</span>
- </button>
- </div>
-
- {/* Tab Contents */}
- <div className="p-8 rounded-3xl bg-white/[0.01] border border-landing-divider space-y-8">
- {activeTab === 'copy' && (
- <div className="space-y-8">
- {(fullEngineData.commerce_creation.seo_meta_title || fullEngineData.commerce_creation.homepage_hero_headline) && (
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- {fullEngineData.commerce_creation.seo_meta_title && (
- <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">SEO Meta Title</p>
- <p className="text-xs font-bold text-white">{fullEngineData.commerce_creation.seo_meta_title}</p>
- {fullEngineData.commerce_creation.seo_meta_description && (
- <p className="text-[10px] text-landing-muted leading-relaxed">{fullEngineData.commerce_creation.seo_meta_description}</p>
- )}
- </div>
- )}
- {fullEngineData.commerce_creation.homepage_hero_headline && (
- <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">Homepage Hero</p>
- <p className="text-xs font-black text-white">{fullEngineData.commerce_creation.homepage_hero_headline}</p>
- <p className="text-[10px] text-landing-muted">{fullEngineData.commerce_creation.homepage_hero_subheadline}</p>
- </div>
- )}
- </div>
- )}
-
- {/* Titles */}
- <div className="space-y-4">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">SEO-Optimized Launch Titles</p>
- <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
- {fullEngineData.commerce_creation.seo_titles?.map((title: string, index: number) => (
- <div key={index} className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider flex flex-col justify-between group hover:border-accent-emerald/30 transition-all">
- <span className="text-[9px] text-landing-muted font-bold uppercase tracking-wider mb-2">Option {index + 1}</span>
- <p className="text-xs font-black text-white leading-relaxed">{title}</p>
- <div className="mt-4 flex items-center justify-between">
- {index === 0 && <span className="text-[8px] font-black uppercase bg-accent-emerald/10 text-accent-emerald px-2 py-0.5 rounded">Primary Selection</span>}
- </div>
- </div>
  ))}
  </div>
- </div>
 
- {/* Description */}
- <div className="p-6 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-3">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">Compelling Product Description</p>
- <div className="text-xs text-landing-secondary font-medium leading-relaxed whitespace-pre-line">
- {fullEngineData.commerce_creation.product_description}
- </div>
- </div>
-
- {/* Benefits */}
- <div className="space-y-3">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">Core Product Benefits</p>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- {fullEngineData.commerce_creation.bullet_benefits?.map((benefit: string, idx: number) => (
- <div key={idx} className="flex gap-3 p-4 rounded-2xl bg-white/[0.02] border border-landing-divider items-start">
- <div className="w-5 h-5 rounded-full bg-accent-emerald/10 flex items-center justify-center text-accent-emerald mt-0.5 shrink-0">
- <Check size={10} />
- </div>
- <p className="text-xs text-landing-secondary font-medium leading-relaxed">{benefit}</p>
- </div>
- ))}
- </div>
- </div>
-
- {/* SEO Tags */}
- <div className="space-y-3">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">Launch tags</p>
- <div className="flex flex-wrap gap-2">
- {fullEngineData.commerce_creation.tags?.map((tag: string, idx: number) => (
- <span key={idx} className="px-3 py-1.5 rounded-xl bg-white/5 border border-landing-divider text-xs text-landing-secondary font-bold">
- #{tag}
- </span>
- ))}
- </div>
- </div>
-
- {/* FAQs */}
- <div className="space-y-3">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">Customer Support FAQs</p>
- <div className="space-y-3">
- {fullEngineData.commerce_creation.faqs?.map((faq: any, idx: number) => (
- <div key={idx} className="p-4 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2">
- <div className="flex items-center gap-2 text-white font-bold text-xs">
- <HelpCircle size={14} className="text-accent-emerald" />
- <span>{faq.question}</span>
- </div>
- <p className="text-xs text-landing-secondary leading-relaxed font-medium pl-6">{faq.answer}</p>
- </div>
- ))}
- </div>
- </div>
- </div>
- )}
-
- {activeTab === 'marketing' && (
- <div className="space-y-8">
- {/* Hooks */}
- <div className="space-y-3">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">Scroll-Stopping Ad Hooks</p>
- <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
- {fullEngineData.commerce_creation.ad_copy_hooks?.map((hook: string, idx: number) => (
- <div key={idx} className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2 relative group hover:border-accent-emerald/20 transition-all">
- <span className="text-[9px] font-black text-accent-emerald uppercase tracking-wider">Hook #{idx + 1}</span>
- <p className="text-xs font-bold text-white leading-relaxed">"{hook}"</p>
- </div>
- ))}
- </div>
- </div>
-
- {/* UGC Scripts */}
- <div className="space-y-4">
- <p className="text-[10px] font-black text-landing-muted tracking-tight">High-Converting UGC Video Scripts</p>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- {fullEngineData.commerce_creation.ugc_scripts?.map((script: string, idx: number) => (
- <div key={idx} className="p-6 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-3">
- <span className="text-xs font-black text-accent-emerald tracking-tight">Video Hook Concept {idx + 1}</span>
- <div className="p-4 rounded-xl bg-black/20 text-xs text-landing-secondary font-mono leading-relaxed whitespace-pre-line h-64 overflow-y-auto custom-scrollbar border border-landing-divider">
- {script}
- </div>
- </div>
- ))}
- </div>
- </div>
- </div>
- )}
-
- {activeTab === 'visuals' && (
+ <div className="p-8 rounded-3xl bg-white/[0.01] border border-landing-divider space-y-6">
+ {storeTab === 'preview' && (
  <div className="space-y-6">
- <div>
- <h4 className="text-sm font-black text-white tracking-tight mb-1 font-sans">Generated Visual Assets</h4>
- <p className="text-xs text-landing-muted font-medium">Real-time studio quality branding visuals powered by Unsplash and Pollinations AI</p>
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider">
+ <p className="text-[10px] font-black text-landing-muted mb-2">Theme Name</p>
+ <p className="text-sm font-black text-white">{fullEngineData.commerce_creation.theme_name}</p>
+ <p className="text-[10px] text-landing-muted mt-1">slug: {fullEngineData.commerce_creation.theme_slug}</p>
+ {fullEngineData.commerce_creation.design_direction && (
+ <p className="text-[10px] text-accent-emerald mt-2 italic">{fullEngineData.commerce_creation.design_direction}</p>
+ )}
  </div>
- 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
- {fullEngineData.commerce_creation.generated_image_urls?.map((url: string, idx: number) => (
- <div key={idx} className="rounded-3xl bg-white/[0.02] border border-landing-divider overflow-hidden flex flex-col group hover:border-accent-emerald/30 transition-all">
- <div className="relative aspect-square overflow-hidden bg-black/40">
- <img 
- src={url} 
- alt={`Generated Brand Visual ${idx + 1}`}
- className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-95 group-hover:brightness-100"
- loading="lazy"
- />
- <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
- <div className="space-y-3 w-full">
- <div className="p-3 rounded-xl bg-white/5 backdrop-blur-md border border-landing-divider text-[10px] text-landing-secondary leading-relaxed max-h-24 overflow-y-auto custom-scrollbar">
- <span className="font-bold text-white block mb-0.5">Photography Context:</span>
-"{fullEngineData.commerce_creation.image_generation_prompts?.[idx] || 'Commercial product shot'}"
+ <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider flex gap-3">
+ {Object.entries(fullEngineData.commerce_creation.theme_colors || {}).map(([k, v]) => (
+ <div key={k} className="text-center">
+ <div className="w-10 h-10 rounded-lg border border-landing-divider mb-1" style={{ background: v as string }} />
+ <p className="text-[9px] text-landing-muted">{k}</p>
  </div>
- <a 
- href={url} 
- target="_blank" 
- rel="noreferrer"
- className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-accent-emerald text-black text-xs font-black uppercase hover:bg-white transition-all shadow-lg"
- >
- <Download size={14} /> Open in High-Res
- </a>
+ ))}
  </div>
  </div>
+ <div className="p-6 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2">
+ <p className="text-[10px] font-black text-landing-muted">Hero Section</p>
+ <p className="text-sm font-black text-white">{fullEngineData.commerce_creation.hero_headline}</p>
+ <p className="text-xs text-landing-secondary">{fullEngineData.commerce_creation.hero_subheadline}</p>
  </div>
- <div className="p-5 flex justify-between items-center border-t border-landing-divider">
- <div>
- <span className="text-xs font-black text-white">Visual Showcase #{idx + 1}</span>
- <span className="text-[10px] text-landing-muted font-bold block mt-0.5">1024 x 1024 • Stock Photo / Graphic</span>
- </div>
- <span className="px-3 py-1 rounded-full bg-accent-emerald/10 border border-accent-emerald/20 text-[9px] text-accent-emerald font-black tracking-tight">
- Ready for Store
- </span>
+ <div className="p-4 rounded-2xl bg-black/30 border border-landing-divider font-mono text-[10px] text-landing-muted">
+ <p className="text-landing-secondary mb-2 font-sans font-bold text-xs">Included in ZIP:</p>
+ config/ · layout/ · sections/ · templates/ · assets/ · locales/
  </div>
  </div>
+ )}
+
+ {storeTab === 'assets' && (
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+ {[...(fullEngineData.commerce_creation.hero_image_urls || []), ...(fullEngineData.commerce_creation.product_image_urls || [])].map((url: string, idx: number) => (
+ <div key={idx} className="rounded-2xl overflow-hidden border border-landing-divider bg-black/40">
+ <img src={url} alt={`Theme asset ${idx + 1}`} className="w-full aspect-video object-cover" loading="lazy" />
+ <div className="p-3 text-[10px] text-landing-muted font-bold">Imagen · Theme Asset #{idx + 1}</div>
+ </div>
+ ))}
+ </div>
+ )}
+
+ {storeTab === 'import' && (
+ <div className="space-y-4">
+ <p className="text-xs text-landing-secondary">Product copy and SEO come from Ad Creative. Import via <code className="text-accent-emerald">extras/product-import.json</code> in the ZIP.</p>
+ {fullEngineData.meta_ads_spy?.product_title && (
+ <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider">
+ <p className="text-[10px] font-black text-landing-muted mb-1">Product Title (from Ad Creative)</p>
+ <p className="text-sm font-bold text-white">{fullEngineData.meta_ads_spy.product_title}</p>
+ </div>
+ )}
+ <div className="flex flex-wrap gap-2">
+ {(fullEngineData.meta_ads_spy?.tags || []).map((tag: string, i: number) => (
+ <span key={i} className="px-2 py-1 rounded-lg bg-white/5 text-xs text-landing-secondary">#{tag}</span>
  ))}
  </div>
  </div>
@@ -759,57 +643,115 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  </div>
  )}
 
-  {/* ─── STAGE 5: Meta Ad Creative Showcase ─── */}
+  {/* ─── Ad Creative: SEO + Copy + Ads ─── */}
   {agent.id === 'meta_ads_spy' && fullEngineData?.meta_ads_spy && (
   <div className="space-y-8 border-t border-landing-divider pt-10">
   <div className="flex items-center gap-3">
-  <Megaphone className="text-accent-rose animate-pulse" size={24} />
+  <Megaphone className="text-accent-violet animate-pulse" size={24} />
   <div>
-  <h4 className="text-lg font-black text-white tracking-tight">Generated Ad Creatives</h4>
-  <p className="text-xs text-landing-secondary">High-converting images and hooks optimized for Facebook & Instagram.</p>
+  <h4 className="text-lg font-black text-white tracking-tight">Marketing & Ad Creative Pack</h4>
+  <p className="text-xs text-landing-secondary">SEO, product copy, tags, hooks, UGC scripts, and Meta ad creatives.</p>
   </div>
   </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-  {fullEngineData.meta_ads_spy.active_ads?.map((ad: any, idx: number) => (
-  <div key={idx} className="rounded-3xl bg-white/[0.02] border border-landing-divider overflow-hidden flex flex-col group hover:border-accent-rose/30 transition-all">
-  <div className="relative aspect-[4/5] overflow-hidden bg-black/40">
-  {ad.ad_image_url ? (
-    <img 
-    src={ad.ad_image_url} 
-    alt={`Generated Ad Creative ${idx + 1}`}
-    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-95 group-hover:brightness-100"
-    loading="lazy"
-    />
-  ) : (
-    <div className="w-full h-full flex items-center justify-center text-landing-muted">
-      <Image size={40} />
-    </div>
+  <div className="flex flex-wrap gap-2">
+  {(['seo', 'copy', 'hooks', 'ads', 'images'] as const).map((tab) => (
+  <button
+  key={tab}
+  onClick={() => setAdTab(tab)}
+  className={cn(
+  "px-4 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all",
+  adTab === tab ? 'bg-accent-violet/10 border-accent-violet/30 text-accent-violet' : 'border-landing-divider text-landing-muted hover:text-white'
   )}
-  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6">
-  <div className="space-y-3 w-full">
-  <div className="p-4 rounded-xl bg-black/40 backdrop-blur-md border border-landing-divider text-xs text-white font-bold leading-relaxed shadow-lg">
-  "{ad.ad_copy}"
+  >
+  {tab}
+  </button>
+  ))}
   </div>
-  <div className="flex items-center gap-2">
-  <span className="px-2 py-1 rounded bg-accent-rose/20 text-accent-rose text-[9px] font-black uppercase tracking-wider border border-accent-rose/30">
-    {ad.media_type} Ad
-  </span>
-  <span className="px-2 py-1 rounded bg-accent-amber/20 text-accent-amber text-[9px] font-black uppercase tracking-wider border border-accent-amber/30">
-    Score: {ad.performance_score}/100
-  </span>
+
+  <div className="p-8 rounded-3xl bg-white/[0.01] border border-landing-divider space-y-6">
+  {adTab === 'seo' && (
+  <div className="space-y-4">
+  {(fullEngineData.meta_ads_spy.seo_meta_title || fullEngineData.meta_ads_spy.seo_meta_description) && (
+  <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider space-y-2">
+  <p className="text-[10px] font-black text-landing-muted">SEO Meta</p>
+  <p className="text-xs font-bold text-white">{fullEngineData.meta_ads_spy.seo_meta_title}</p>
+  <p className="text-[10px] text-landing-muted">{fullEngineData.meta_ads_spy.seo_meta_description}</p>
+  </div>
+  )}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+  {fullEngineData.meta_ads_spy.seo_titles?.map((t: string, i: number) => (
+  <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-landing-divider text-xs font-bold text-white">{t}</div>
+  ))}
   </div>
   </div>
+  )}
+
+  {adTab === 'copy' && (
+  <div className="space-y-4">
+  <div className="p-5 rounded-2xl bg-white/[0.02] border border-landing-divider">
+  <p className="text-[10px] font-black text-landing-muted mb-2">Product Title</p>
+  <p className="text-sm font-black text-white">{fullEngineData.meta_ads_spy.product_title}</p>
+  </div>
+  <p className="text-xs text-landing-secondary leading-relaxed">{fullEngineData.meta_ads_spy.product_creative_description}</p>
+  <div className="flex flex-wrap gap-2">
+  {fullEngineData.meta_ads_spy.tags?.map((tag: string, i: number) => (
+  <span key={i} className="px-2 py-1 rounded-lg bg-white/5 text-xs">#{tag}</span>
+  ))}
+  </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+  {fullEngineData.meta_ads_spy.bullet_benefits?.map((b: string, i: number) => (
+  <div key={i} className="flex gap-2 p-3 rounded-xl bg-white/[0.02] border border-landing-divider text-xs text-landing-secondary">
+  <Check size={12} className="text-accent-violet shrink-0 mt-0.5" />{b}
+  </div>
+  ))}
+  </div>
+  {fullEngineData.meta_ads_spy.faqs?.map((faq: any, i: number) => (
+  <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-landing-divider">
+  <p className="text-xs font-bold text-white">{faq.question}</p>
+  <p className="text-xs text-landing-muted mt-1">{faq.answer}</p>
+  </div>
+  ))}
+  </div>
+  )}
+
+  {adTab === 'hooks' && (
+  <div className="space-y-4">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+  {fullEngineData.meta_ads_spy.ad_copy_hooks?.map((h: string, i: number) => (
+  <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-landing-divider text-xs font-bold text-white">"{h}"</div>
+  ))}
+  </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {fullEngineData.meta_ads_spy.ugc_scripts?.map((s: string, i: number) => (
+  <div key={i} className="p-4 rounded-xl bg-black/20 border border-landing-divider text-xs font-mono text-landing-secondary whitespace-pre-line">{s}</div>
+  ))}
   </div>
   </div>
-  <div className="p-5 flex justify-between items-center border-t border-landing-divider bg-white/[0.01]">
-  <div className="w-full">
-  <span className="text-[10px] text-landing-muted font-bold uppercase tracking-wider mb-1 block">Winning Hook</span>
-  <span className="text-xs font-black text-white block truncate">{ad.hook_text}</span>
-  </div>
+  )}
+
+  {adTab === 'ads' && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {fullEngineData.meta_ads_spy.active_ads?.map((ad: any, idx: number) => (
+  <div key={idx} className="rounded-2xl border border-landing-divider overflow-hidden">
+  {ad.ad_image_url && <img src={ad.ad_image_url} alt="" className="w-full aspect-[4/5] object-cover" loading="lazy" />}
+  <div className="p-4 space-y-2">
+  <p className="text-xs font-bold text-white">"{ad.ad_copy}"</p>
+  <p className="text-[10px] text-accent-violet">{ad.hook_text}</p>
+  <span className="text-[9px] text-landing-muted">Score {ad.performance_score}/100</span>
   </div>
   </div>
   ))}
+  </div>
+  )}
+
+  {adTab === 'images' && (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  {fullEngineData.meta_ads_spy.creative_image_urls?.map((url: string, i: number) => (
+  <img key={i} src={url} alt="" className="rounded-2xl border border-landing-divider w-full aspect-square object-cover" loading="lazy" />
+  ))}
+  </div>
+  )}
   </div>
   </div>
   )}
@@ -929,10 +871,10 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
   className="w-full h-16 px-10 rounded-2xl bg-accent-violet hover:bg-accent-violet/90 text-white font-black text-base flex items-center justify-center gap-3 transition-all disabled:opacity-50"
  >
   {downloading ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
-  {downloading ? 'Preparing ZIP...' : 'Download Store ZIP'}
+  {downloading ? 'Preparing ZIP...' : 'Download Theme ZIP'}
  </button>
  <p className="text-[10px] text-landing-muted text-center mt-3">
-  Includes product.json, store pages, images, and Shopify import instructions.
+  Uploadable Shopify OS 2.0 theme + extras/product-import.json for product setup.
  </p>
  </div>
  )}
@@ -946,7 +888,7 @@ export default function AgentStageReport({ agent, activeStep, totalSteps, onAppr
  className="cta-button h-16 px-10 rounded-2xl group flex-1 w-full text-base font-black"
  >
  <CheckCircle2 size={20} className="mr-2" />
- {activeStep === 3 
+ {activeStep === 4 
  ? 'Approve & Complete Mission' 
  : `Approve & Proceed to ${activeStep < totalSteps - 1 ? 'Next Phase' : 'Dashboard'}`}
  <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform ml-2" />

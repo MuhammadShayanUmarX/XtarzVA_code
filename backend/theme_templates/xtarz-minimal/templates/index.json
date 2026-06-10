@@ -1,0 +1,55 @@
+{
+  "sections": {
+    "header": {
+      "type": "header",
+      "settings": { "logo_text": "Brand" }
+    },
+    "hero": {
+      "type": "hero-banner",
+      "settings": {
+        "headline": "Crafted for everyday excellence",
+        "subheadline": "Thoughtfully designed products that elevate your daily routine.",
+        "button_label": "Shop the collection",
+        "hero_image_asset": "hero-1.jpg"
+      }
+    },
+    "trust": {
+      "type": "trust-bar",
+      "settings": {
+        "heading": "Why customers choose us",
+        "point_1": "Free shipping on all orders",
+        "point_2": "30-day satisfaction guarantee",
+        "point_3": "Premium materials, built to last"
+      }
+    },
+    "featured": {
+      "type": "featured-product",
+      "settings": {
+        "title": "Featured Product",
+        "description": "Our signature piece — designed with care.",
+        "price": "$49.99",
+        "compare_at_price": "$64.99",
+        "product_image_asset": "product-1.jpg"
+      }
+    },
+    "testimonial": {
+      "type": "testimonial",
+      "settings": {
+        "quote": "This completely changed my daily routine. Worth every penny.",
+        "author": "Sarah M., verified buyer"
+      }
+    },
+    "about": {
+      "type": "rich-text",
+      "settings": {
+        "heading": "Our story",
+        "body": "<p>We believe in products that earn a permanent place in your life.</p>"
+      }
+    },
+    "footer": {
+      "type": "footer",
+      "settings": { "copyright_text": "© 2026 Brand. All rights reserved." }
+    }
+  },
+  "order": ["header", "hero", "trust", "featured", "testimonial", "about", "footer"]
+}

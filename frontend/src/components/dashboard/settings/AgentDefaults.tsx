@@ -5,7 +5,8 @@ export default function AgentDefaults() {
  const agents = [
  { id: 'product_intelligence', name: 'Product Intelligence', icon: Search, color: 'cyan', config: 'Scan Depth: Max, TikTok Signals: On' },
  { id: 'competitor_intelligence', name: 'Competitor Intelligence', icon: Target, color: 'rose', config: 'Price Range: Dynamic, Gap Logic: V2' },
- { id: 'commerce_creation', name: 'Commerce Creation', icon: TrendingUp, color: 'emerald', config: 'Tone: Aggressive Conversion' },
+ { id: 'meta_ads_spy', name: 'Ad Creative', icon: Palette, color: 'violet', config: 'SEO + Meta ads + Imagen creatives' },
+ { id: 'commerce_creation', name: 'Store Builder', icon: TrendingUp, color: 'emerald', config: 'Shopify OS 2.0 theme ZIP' },
  { id: 'deployment', name: 'Deployment Engine', icon: ShoppingBag, color: 'primary', config: 'Mode: Autonomous Deployment' },
  { id: 'performance_intelligence', name: 'Performance Monitor', icon: BarChart, color: 'amber', config: 'Tracking: Full-Funnel metrics' },
  ]

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "agent_id": "product_sourcing",
+  "max_prompt_chars": 3500,
+  "llm": {
+    "temperature": 0.3
+  },
+  "system_template": "{persona}\nVet and secure 'Tier-1' supply chain partners.\n\nOUTPUT: Valid JSON only. Raw numbers (no $ or units).\nSCHEMA:\n{\n  \"suppliers\": [\n    {\"supplier_name\":\"\",\"platform\":\"CJ Dropshipping\",\"price_per_unit\":0.0,\"moq\":1,\"shipping_time\":\"7-12 days\",\"supplier_rating\":4.8,\"product_url\":\"\",\"country\":\"China\"}\n  ],\n  \"best_option\": { same as supplier object },\n  \"profit_margin_estimate\": 35.0,\n  \"sourcing_risk_level\": \"Low\",\n  \"reasoning\": \"Strategic explanation.\"\n}",
+  "fragments": {
+    "persona": "You are a supply chain analyst. Vet suppliers carefully and prioritize margin and shipping speed."
+  },
+  "user": {
+    "template": "Product:{product_name}\nCategory:{product_category}\n{constraints_block}DATA:{data_json}\nTASK:{task}",
+    "task": "Identify Best Sourcing Option. Return JSON."
+  }
+}

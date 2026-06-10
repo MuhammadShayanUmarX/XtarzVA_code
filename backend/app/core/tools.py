@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import urllib.parse
 import httpx
@@ -19,7 +20,9 @@ class ResearchTools:
         self.cj_access_token = None
 
         integrations = {
-            "groq": bool(settings.GROQ_API_KEY),
+            "google": bool(settings.GOOGLE_API_KEY),
+            "gemini": bool(settings.GOOGLE_API_KEY),
+            "imagen": bool(settings.GOOGLE_API_KEY),
             "tavily": bool(self.tavily_client),
             "apify": bool(self.apify_client),
             "firecrawl": bool(self.firecrawl_app),
@@ -45,6 +48,59 @@ class ResearchTools:
             if scrape_result.get("content"):
                 return str(scrape_result["content"])[:2000]
         return str(scrape_result)[:2000]
+
+    @staticmethod
+    def _parse_marketplace_details(
+        details: Any,
+        url: str,
+        platform: str,
+        fallback_title: str = "",
+    ) -> Dict[str, Any]:
+        import re
+
+        markdown = ResearchTools._extract_markdown(details) if details else ""
+        title = fallback_title
+        price = None
+        moq = 1
+        country = "China"
+
+        if markdown:
+            for line in markdown.split("\n")[:15]:
+                line = line.strip()
+                if line.startswith("#") and len(line) > 2:
+                    title = line.lstrip("#").strip()[:200]
+                    break
+            if not title:
+                for line in markdown.split("\n")[:10]:
+                    line = line.strip()
+                    if len(line) > 10 and not line.startswith("http"):
+                        title = line[:200]
+                        break
+
+            price_match = re.search(r"\$[\d,.]+(?:\s*-\s*\$[\d,.]+)?", markdown)
+            if price_match:
+                price = price_match.group()
+            moq_match = re.search(r"MOQ[:\s]*(\d+)", markdown, re.I)
+            if moq_match:
+                moq = int(moq_match.group(1))
+            country_match = re.search(
+                r"(China|USA|United States|UK|Germany|India|Vietnam|Turkey|Pakistan)",
+                markdown,
+                re.I,
+            )
+            if country_match:
+                country = country_match.group(1)
+
+        return {
+            "title": title or f"{platform} Product",
+            "price": price,
+            "moq": moq,
+            "country": country,
+            "url": url,
+            "platform": platform,
+            "supplier_name": (title or platform)[:80],
+            "rating": 4.5,
+        }
 
     def _unsplash_access_key(self) -> str:
         return settings.ACCESS_TOKEN or settings.APPLICATION_AI or ""
@@ -332,50 +388,96 @@ class ResearchTools:
                 return {"markdown": str(geekflare)[:2000], "url": url, "source": "geekflare", "lighthouse": geekflare}
             return {}
 
-    async def search_alibaba(self, query: str, max_items: int = 3) -> List[Dict[str, Any]]:
+    async def search_alibaba(self, query: str, max_items: int = 8) -> List[Dict[str, Any]]:
         """Search for wholesale suppliers on Alibaba for FREE (Tavily + Firecrawl)."""
         try:
-            # 1. Use Tavily to find direct product URLs on Alibaba
             search_query = f"site:alibaba.com {query} wholesale"
             results = await self.search_web(search_query, max_results=max_items)
-            
+
             sourcing_data = []
             for res in results:
-                url = res.get("url")
-                if "alibaba.com/product-detail" in url:
-                    # 2. Use Firecrawl to scrape the details for free
-                    details = await self.audit_website(url)
-                    sourcing_data.append({"url": url, "details": details})
-            
+                url = res.get("url", "")
+                if "alibaba.com" not in url:
+                    continue
+                details = await self.audit_website(url)
+                parsed = self._parse_marketplace_details(
+                    details,
+                    url,
+                    "Alibaba",
+                    fallback_title=res.get("title", ""),
+                )
+                sourcing_data.append(parsed)
+                if len(sourcing_data) >= max_items:
+                    break
+
             return sourcing_data
         except Exception as e:
             logger.error(f"Free Alibaba sourcing failed: {str(e)}")
             return []
 
-    async def search_aliexpress(self, query: str, max_items: int = 3) -> List[Dict[str, Any]]:
+    async def search_aliexpress(self, query: str, max_items: int = 8) -> List[Dict[str, Any]]:
         """Search for dropshipping suppliers on AliExpress for FREE (Tavily + Firecrawl)."""
         try:
-            # 1. Use Tavily to find direct product URLs on AliExpress
             search_query = f"site:aliexpress.com {query} dropshipping"
             results = await self.search_web(search_query, max_results=max_items)
-            
+
             sourcing_data = []
             for res in results:
-                url = res.get("url")
-                if "aliexpress.com/item" in url:
-                    # 2. Use Firecrawl to scrape the details for free
-                    details = await self.audit_website(url)
-                    sourcing_data.append({"url": url, "details": details})
-            
+                url = res.get("url", "")
+                if "aliexpress.com" not in url:
+                    continue
+                details = await self.audit_website(url)
+                parsed = self._parse_marketplace_details(
+                    details,
+                    url,
+                    "AliExpress",
+                    fallback_title=res.get("title", ""),
+                )
+                parsed["shipping"] = "15-25 days"
+                sourcing_data.append(parsed)
+                if len(sourcing_data) >= max_items:
+                    break
+
             return sourcing_data
         except Exception as e:
             logger.error(f"Free AliExpress sourcing failed: {str(e)}")
             return []
 
-    def generate_image_url(self, prompt: str, width: int = 1024, height: int = 1024) -> str:
-        """Generate a Pollinations AI image URL."""
-        encoded_prompt = urllib.parse.quote(prompt)
-        return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
+    async def generate_image_imagen(self, prompt: str) -> Optional[bytes]:
+        """Generate an image via Google Imagen. Returns JPEG/PNG bytes or None."""
+        if not settings.GOOGLE_API_KEY:
+            logger.warning("GOOGLE_API_KEY not configured. Skipping Imagen generation.")
+            return None
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+
+            def _generate() -> Optional[bytes]:
+                response = client.models.generate_images(
+                    model=settings.IMAGEN_MODEL,
+                    prompt=prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        output_mime_type="image/jpeg",
+                    ),
+                )
+                if response.generated_images:
+                    img = response.generated_images[0].image
+                    if img and img.image_bytes:
+                        return img.image_bytes
+                return None
+
+            return await asyncio.to_thread(_generate)
+        except Exception as e:
+            logger.error(f"Imagen generation failed: {e}")
+            return None
+
+    @staticmethod
+    def image_bytes_to_data_url(image_bytes: bytes, mime: str = "image/jpeg") -> str:
+        encoded = base64.b64encode(image_bytes).decode("ascii")
+        return f"data:{mime};base64,{encoded}"
 
     async def search_meta_ads(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
         """Research active Meta / Facebook ads for a niche via SerpAPI + Tavily."""
@@ -522,6 +624,7 @@ class ResearchTools:
                             "rating": 4.8,
                             "orders": 100,
                             "shipping": "CJ Packet (7-12 days)",
+                            "country": p.get("warehouse", "China") or "China",
                             "url": f"https://cjdropshipping.com/product-detail.html?id={pid}" if pid else "https://cjdropshipping.com",
                             "image": p.get("bigImage", p.get("productImage", ""))
                         })

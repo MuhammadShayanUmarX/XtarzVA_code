@@ -103,27 +103,29 @@ export default function AgentWorkflowPage() {
  reasoning_summary: data.reasoning,
  recommendations: [`Supplier: ${data.best_option?.supplier_name}`, `Platform: ${data.best_option?.platform}`]
  };
- case 'commerce_creation':
- return {
- summary_stats: [
- { label: 'Product Title', value: data.product_title || data.seo_titles?.[0] || 'N/A' },
- { label: 'SEO Meta', value: data.seo_meta_title ? 'Ready' : 'N/A' },
- { label: 'Variants', value: `${data.variants?.length || 1}` },
- { label: 'Ad Hooks', value: `${data.ad_copy_hooks?.length || 0}` },
- { label: 'Images', value: `${data.generated_image_urls?.length || 0}` }
- ],
- reasoning_summary: data.homepage_hero_headline || data.product_description,
- recommendations: data.seo_titles
- };
  case 'meta_ads_spy':
  return {
  summary_stats: [
+ { label: 'SEO Titles', value: `${data.seo_titles?.length || 0}` },
+ { label: 'Tags', value: `${data.tags?.length || 0}` },
+ { label: 'Ad Hooks', value: `${data.ad_copy_hooks?.length || 0}` },
  { label: 'Active Ads', value: `${data.active_ads?.length || 0}` },
- { label: 'Top Hooks', value: `${data.winning_hooks?.length || 0}` },
- { label: 'Competitors', value: `${data.top_competitors_tracked?.length || 0}` }
+ { label: 'Creatives', value: `${data.creative_image_urls?.length || 0}` }
  ],
- reasoning_summary: data.recommended_strategy,
- recommendations: data.winning_hooks
+ reasoning_summary: data.recommended_strategy || data.product_creative_description,
+ recommendations: data.seo_titles || data.winning_hooks
+ };
+ case 'commerce_creation':
+ return {
+ summary_stats: [
+ { label: 'Theme', value: data.theme_name || 'N/A' },
+ { label: 'Hero', value: data.hero_headline ? 'Ready' : 'N/A' },
+ { label: 'Trust Points', value: `${data.trust_points?.length || 0}` },
+ { label: 'Sections', value: data.homepage_sections?.order?.length ? `${data.homepage_sections.order.length}` : '7' },
+ { label: 'Images', value: `${(data.hero_image_urls?.length || 0) + (data.product_image_urls?.length || 0)}` }
+ ],
+ reasoning_summary: data.design_direction || data.hero_headline || data.theme_name,
+ recommendations: [data.hero_button_label, data.collection_title].filter(Boolean)
  };
  case 'deployment':
  return {

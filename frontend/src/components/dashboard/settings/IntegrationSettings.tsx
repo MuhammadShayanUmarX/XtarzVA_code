@@ -11,7 +11,9 @@ interface IntegrationRow {
 
 const LABELS: Record<string, string> = {
   langchain: 'LangChain Agents',
-  groq: 'Groq LLM',
+  gemini: 'Google Gemini',
+  google: 'Google AI',
+  imagen: 'Google Imagen',
   tavily: 'Tavily Search',
   apify: 'Apify Scrapers',
   firecrawl: 'Firecrawl',
@@ -19,7 +21,6 @@ const LABELS: Record<string, string> = {
   geekflare: 'Geekflare Lighthouse',
   cj_dropshipping: 'CJ Dropshipping',
   unsplash: 'Unsplash',
-  pollinations: 'Pollinations AI',
   shopify: 'Shopify',
 }
 
@@ -47,7 +48,7 @@ export default function IntegrationSettings() {
         <div className="space-y-2">
           <h3 className="text-xl font-black text-white tracking-tight">Backend Integrations</h3>
           <p className="text-sm text-landing-muted font-medium">
-            Live status from your server environment (.env). Agents run on LangChain with Groq.
+            Live status from your server environment (.env). Agents run on LangChain with Google Gemini and Imagen.
           </p>
         </div>
 

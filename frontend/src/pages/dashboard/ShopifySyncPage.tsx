@@ -58,7 +58,7 @@ export default function ShopifySyncPage() {
             <h1 className="text-4xl font-black text-landing-primary tracking-tight">Store Builder</h1>
           </div>
           <p className="text-lg text-landing-secondary font-medium leading-relaxed max-w-2xl">
-            Build a Shopify-ready store like an expert — product pages, SEO, collections, homepage copy, and a downloadable ZIP package.
+            Generate a complete uploadable Shopify OS 2.0 theme — sections, templates, branded assets, and product import JSON. Upload via Themes → Add theme.
           </p>
         </div>
       </header>
@@ -166,23 +166,23 @@ export default function ShopifySyncPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-accent-violet">
                 <FileText size={16} />
-                <span className="text-xs font-black tracking-tight">Product + SEO</span>
+                <span className="text-xs font-black tracking-tight">Theme structure</span>
               </div>
-              <p className="text-[10px] text-landing-muted leading-relaxed">Titles, HTML descriptions, meta tags, and variants ready for Shopify import.</p>
+              <p className="text-[10px] text-landing-muted leading-relaxed">layout/, sections/, templates/, config/ — valid Shopify OS 2.0 theme.</p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-accent-cyan">
-                <Megaphone size={16} />
-                <span className="text-xs font-black tracking-tight">Ad Hooks</span>
+                <Image size={16} />
+                <span className="text-xs font-black tracking-tight">Theme assets</span>
               </div>
-              <p className="text-[10px] text-landing-muted leading-relaxed">Scroll-stopping hooks and UGC scripts for launch campaigns.</p>
+              <p className="text-[10px] text-landing-muted leading-relaxed">Hero and product images generated with Google Imagen.</p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-accent-emerald">
                 <Download size={16} />
-                <span className="text-xs font-black tracking-tight">ZIP Export</span>
+                <span className="text-xs font-black tracking-tight">Theme ZIP</span>
               </div>
-              <p className="text-[10px] text-landing-muted leading-relaxed">Download the full store package when the build completes.</p>
+              <p className="text-[10px] text-landing-muted leading-relaxed">Upload in Shopify Admin → Themes. Product import JSON in extras/.</p>
             </div>
           </div>
         </div>
@@ -199,9 +199,9 @@ export default function ShopifySyncPage() {
         <h3 className="text-sm font-black text-landing-primary mb-4">What you get</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { icon: FileText, label: 'Product page', desc: 'HTML description, bullets, FAQs, SEO meta' },
-            { icon: Image, label: 'Visual assets', desc: 'AI-generated product photography URLs' },
-            { icon: Download, label: 'Store ZIP', desc: 'product.json, pages, images, import README' },
+            { icon: FileText, label: 'OS 2.0 theme', desc: 'Sections, templates, settings_data.json, theme.css' },
+            { icon: Image, label: 'Branded assets', desc: 'Hero banner and product images in assets/' },
+            { icon: Download, label: 'Theme ZIP', desc: 'Uploadable archive + extras/product-import.json' },
           ].map(({ icon: Icon, label, desc }) => (
             <div key={label} className="p-5 rounded-2xl bg-landing-surface border border-landing-divider space-y-2">
               <Icon size={18} className="text-accent-violet" />

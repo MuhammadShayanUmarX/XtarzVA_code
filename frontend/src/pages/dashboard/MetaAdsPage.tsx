@@ -3,6 +3,7 @@ import { Megaphone, ArrowRight, Loader2, Target, Zap, DollarSign } from 'lucide-
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import DiscoveredProductPicker from '../../components/dashboard/DiscoveredProductPicker'
 
 const BUDGET_TIERS = ['Testing ($10-50/day)', 'Scaling ($50-200/day)', 'Aggressive ($200+/day)'] as const
 const AD_ANGLES = ['Problem/Solution', 'Social Proof', 'Before/After', 'Urgency/Scarcity', 'Lifestyle', 'Unboxing'] as const
@@ -47,10 +48,10 @@ export default function MetaAdsPage() {
             <div className="w-12 h-12 rounded-2xl bg-accent-amber/10 border border-accent-amber/20 flex items-center justify-center text-accent-amber">
               <Megaphone size={24} />
             </div>
-            <h1 className="text-4xl font-black text-landing-primary tracking-tight">Meta Ad Creative</h1>
+            <h1 className="text-4xl font-black text-landing-primary tracking-tight">Ad Creative</h1>
           </div>
           <p className="text-lg text-landing-secondary font-medium leading-relaxed max-w-2xl">
-            Generate high-converting ad creatives, hooks, and images for Facebook and Instagram — tuned to your audience and budget.
+            SEO titles, product copy, Shopify tags, ad hooks, UGC scripts, and Meta ad creatives — powered by Gemini and Imagen.
           </p>
         </div>
       </header>
@@ -59,7 +60,7 @@ export default function MetaAdsPage() {
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-black text-white tracking-tight">Campaign brief</h2>
-            <p className="text-sm text-landing-muted">Define your product, audience, and ad strategy before generation.</p>
+            <p className="text-sm text-landing-muted">Generates SEO titles, meta descriptions, product copy, Shopify tags, ad hooks, UGC scripts, and creative images.</p>
           </div>
 
           <form onSubmit={handleTrack} className="space-y-5">
@@ -152,6 +153,14 @@ export default function MetaAdsPage() {
           </div>
         </div>
       </section>
+
+      <DiscoveredProductPicker
+        targetStage="meta_ads_spy"
+        title="Import from Product Discovery"
+        description="Run Ad Creative on a product you already researched."
+        extraInitialInput={{ brand_tone: 'Professional' }}
+        onImport={(name) => setProductName(name)}
+      />
     </div>
   )
 }

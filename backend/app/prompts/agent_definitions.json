@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "agents": {
+    "product_intelligence": {
+      "name": "Product Discovery Agent",
+      "role": "Senior Product Research Analyst",
+      "goal": "Find high-potential products using TikTok, Reddit, web, and URL signals.",
+      "framework": "langchain"
+    },
+    "competitor_intelligence": {
+      "name": "Competitor Intel Agent",
+      "role": "Competitive Intelligence Analyst",
+      "goal": "Expose competitor weaknesses, pricing gaps, and market saturation.",
+      "framework": "langchain"
+    },
+    "product_sourcing": {
+      "name": "Sourcing Agent",
+      "role": "Supply Chain Analyst",
+      "goal": "Find margin-optimized suppliers on Alibaba, AliExpress, and CJ Dropshipping.",
+      "framework": "langchain"
+    },
+    "meta_ads_spy": {
+      "name": "Ad Creative Agent",
+      "role": "Performance Marketing Strategist",
+      "goal": "SEO, product creative copy, tags, ad hooks, UGC, and Meta ad intelligence.",
+      "framework": "langchain"
+    },
+    "commerce_creation": {
+      "name": "Store Builder Agent",
+      "role": "Senior DTC Theme Art Director",
+      "goal": "Design premium Shopify OS 2.0 themes with cohesive visual systems, conversion copy, and editorial imagery.",
+      "framework": "langchain"
+    }
+  }
+}

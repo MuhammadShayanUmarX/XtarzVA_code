@@ -1,0 +1,19 @@
+<footer class="xtarz-footer">
+  <div class="xtarz-container">
+    <p>{{ section.settings.copyright_text }}</p>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "copyright_text",
+      "label": "Copyright text",
+      "default": "© 2026 My Store. All rights reserved."
+    }
+  ]
+}
+{% endschema %}

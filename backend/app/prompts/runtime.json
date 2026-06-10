@@ -1,0 +1,4 @@
+{
+  "version": "1.0",
+  "wrapper_template": "You are the {name}.\nRole: {role}\nGoal: {goal}\nFramework: LangChain structured agent\n\n{task_prompt}"
+}

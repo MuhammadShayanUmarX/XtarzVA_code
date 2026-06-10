@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   Calendar, ChevronDown, BarChart2, DollarSign,
-  Sparkles, ChevronRight, Loader2
+  Sparkles, ChevronRight, Loader2, Package, Target, ShoppingBag
 } from 'lucide-react'
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -12,23 +12,14 @@ import {
 import * as Popover from '@radix-ui/react-popover'
 import { cn } from '../../lib/utils'
 import api from '../../lib/api'
+import ActivityLog from '../../components/dashboard/ActivityLog'
+import type { AnalyticsData } from '../../types/activity'
 
 const RANGE_MAP: Record<string, string> = {
   'Last 7 days': '7d',
   'Last 30 days': '30d',
   'Last 90 days': '90d',
   'All Time': 'all',
-}
-
-interface AnalyticsData {
-  total_runs: number
-  total_products_saved: number
-  daily_scans: Array<{ date: string; runs: number; products_found: number }>
-  top_niches: Array<{ name: string; run_count: number; rate: number }>
-  margin_spread: Array<{ val: string; count: number }>
-  mean_margin: number | null
-  stage_breakdown: Record<string, number>
-  completed_runs: number
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -41,6 +32,25 @@ const STAGE_LABELS: Record<string, string> = {
 
 const STAGE_COLORS = ['#4f6ef7', '#8b5cf6', '#10b981', '#f59e0b', '#06b6d4']
 
+const EMPTY_ANALYTICS: AnalyticsData = {
+  total_runs: 0,
+  total_products_saved: 0,
+  daily_scans: [],
+  top_niches: [],
+  margin_spread: [],
+  mean_margin: null,
+  stage_breakdown: {},
+  completed_runs: 0,
+  activity_runs: [],
+  totals: {
+    competitors_found: 0,
+    products_researched: 0,
+    suppliers_found: 0,
+    avg_margin: null,
+    avg_unit_price: null,
+  },
+}
+
 export default function AnalyticsPage() {
   const [range, setRange] = useState('Last 7 days')
   const [data, setData] = useState<AnalyticsData | null>(null)
@@ -51,11 +61,7 @@ export default function AnalyticsPage() {
     const rangeKey = RANGE_MAP[range] || '7d'
     api.get(`/v2/stats/analytics?range=${rangeKey}`)
       .then(res => setData(res.data))
-      .catch(() => setData({
-        total_runs: 0, total_products_saved: 0, daily_scans: [],
-        top_niches: [], margin_spread: [], mean_margin: null,
-        stage_breakdown: {}, completed_runs: 0,
-      }))
+      .catch(() => setData(EMPTY_ANALYTICS))
       .finally(() => setLoading(false))
   }, [range])
 
@@ -76,6 +82,20 @@ export default function AnalyticsPage() {
 
   const d = data!
 
+  const kpiCards = [
+    { label: 'Total Runs', value: d.total_runs, sub: 'In selected period' },
+    { label: 'Completed', value: d.completed_runs, sub: 'Successful runs', accent: 'text-accent-emerald' },
+    { label: 'Products Researched', value: d.totals.products_researched, sub: 'Candidate rows found', icon: Package },
+    { label: 'Competitors Found', value: d.totals.competitors_found, sub: 'Across all intel runs', icon: Target },
+    { label: 'Suppliers Found', value: d.totals.suppliers_found, sub: 'Sourcing options', icon: ShoppingBag },
+    {
+      label: 'Avg Margin',
+      value: d.totals.avg_margin != null ? `${d.totals.avg_margin}%` : '—',
+      sub: d.totals.avg_unit_price != null ? `Avg unit $${d.totals.avg_unit_price}` : 'From your runs',
+      accent: 'text-accent-amber',
+    },
+  ]
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-12 pb-24">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
@@ -87,7 +107,7 @@ export default function AnalyticsPage() {
             <h1 className="text-4xl font-black text-landing-primary tracking-tight">Performance Analytics</h1>
           </div>
           <p className="text-lg text-landing-secondary font-medium leading-relaxed max-w-2xl">
-            Track your scan activity, product finds, and niche performance from real run data.
+            Track scans, margins, and a full log of every product, competitor, and supplier your agents found.
           </p>
         </div>
 
@@ -128,6 +148,18 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <>
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+            {kpiCards.map((kpi) => (
+              <div key={kpi.label} className="glass-panel p-5 space-y-2">
+                <p className="text-[10px] font-black text-landing-muted tracking-tight">{kpi.label}</p>
+                <p className={cn('text-2xl font-black tabular-nums', kpi.accent || 'text-landing-primary')}>
+                  {kpi.value}
+                </p>
+                <p className="text-[10px] text-landing-muted">{kpi.sub}</p>
+              </div>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             <div className="xl:col-span-2 glass-panel p-10 space-y-10 relative overflow-hidden">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -180,20 +212,12 @@ export default function AnalyticsPage() {
                 <h4 className="text-sm font-black text-landing-primary tracking-tight">Summary</h4>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-landing-secondary">Total Scans</span>
-                    <span className="text-lg font-black text-landing-primary">{d.total_runs}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-landing-secondary">Completed</span>
-                    <span className="text-lg font-black text-accent-emerald">{d.completed_runs}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
                     <span className="text-xs text-landing-secondary">Products Saved</span>
                     <span className="text-lg font-black text-landing-primary">{d.total_products_saved}</span>
                   </div>
                   {d.mean_margin !== null && (
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-landing-secondary">Avg. Margin</span>
+                      <span className="text-xs text-landing-secondary">Mean Margin</span>
                       <span className="text-lg font-black text-accent-amber">{d.mean_margin}%</span>
                     </div>
                   )}
@@ -301,6 +325,8 @@ export default function AnalyticsPage() {
               )}
             </div>
           </div>
+
+          <ActivityLog runs={d.activity_runs} />
         </>
       )}
     </div>

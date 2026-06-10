@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -184,35 +184,48 @@
     background-image: var(--gradient-cinematic);
   }
 
-  /* ─── Premium Muted Slate Redesign Utilities ─── */
+  /* ─── Landing — Obsidian + Copper ─── */
+  .landing-card {
+    @apply bg-landing-surface border border-landing-divider rounded-xl;
+  }
+
   .landing-panel {
-    background-color: rgba(21, 24, 34, 0.65);
-    @apply backdrop-blur-md border border-white/5 rounded-xl shadow-lg;
+    background-color: #1C1917;
+    @apply border border-landing-divider rounded-xl;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  }
+
+  .section-eyebrow {
+    @apply text-xs font-medium text-landing-muted;
+  }
+
+  .metric-up {
+    @apply text-landing-accentLime;
   }
 
   .btn-proper-primary {
-    background-color: #3E63DD;
-    border: 1px solid rgba(62, 99, 221, 0.5);
+    background-color: #E07A3A;
+    border: 1px solid rgba(224, 122, 58, 0.4);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     @apply inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg
-           text-white font-bold text-xs uppercase tracking-widest
-           hover:scale-[1.01] active:scale-[0.99] shadow-sm cursor-pointer;
+           text-white font-semibold text-sm
+           hover:brightness-110 active:scale-[0.99] shadow-sm cursor-pointer;
   }
   .btn-proper-primary:hover {
-    background-color: #2B52D5;
+    background-color: #D97706;
   }
 
   .btn-proper-secondary {
-    background-color: #1E2230;
-    border: 1px solid rgba(42, 46, 61, 0.4);
-    color: #A2A8C2;
+    background-color: #292524;
+    border: 1px solid #44403C;
+    color: #A8A29E;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     @apply inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg
-           font-bold text-xs uppercase tracking-widest
-           hover:text-white active:scale-[0.99] cursor-pointer;
+           font-semibold text-sm
+           hover:text-landing-primary hover:bg-landing-elevated active:scale-[0.99] cursor-pointer;
   }
   .btn-proper-secondary:hover {
-    background-color: #2A2F45;
+    border-color: #57534E;
   }
 }
 

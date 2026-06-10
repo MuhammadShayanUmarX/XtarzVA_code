@@ -222,9 +222,7 @@ async def stream_run(run_id: str, request: Request, db: AsyncSession = Depends(g
     return EventSourceResponse(event_generator())
 
 
-@router.get("/{run_id}/store-export")
-async def export_store_zip(run_id: str, db: AsyncSession = Depends(get_db)):
-    """Download Shopify-ready store assets as a ZIP archive."""
+async def _export_theme_zip(run_id: str, db: AsyncSession) -> Response:
     uid = uuid.UUID(run_id)
     result = await db.execute(select(Run).where(Run.id == uid))
     db_run = result.scalar_one_or_none()
@@ -246,6 +244,18 @@ async def export_store_zip(run_id: str, db: AsyncSession = Depends(get_db)):
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.get("/{run_id}/theme-export")
+async def export_theme_zip(run_id: str, db: AsyncSession = Depends(get_db)):
+    """Download uploadable Shopify theme ZIP."""
+    return await _export_theme_zip(run_id, db)
+
+
+@router.get("/{run_id}/store-export")
+async def export_store_zip(run_id: str, db: AsyncSession = Depends(get_db)):
+    """Download Shopify theme ZIP (legacy alias)."""
+    return await _export_theme_zip(run_id, db)
 
 
 @router.get("/{run_id}")
