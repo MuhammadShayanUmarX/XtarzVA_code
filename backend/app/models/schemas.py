@@ -203,3 +203,45 @@ class ContactSubmissionResponse(BaseModel):
     topic: str
     message: str
     created_at: datetime
+
+
+class AdSpyOutput(BaseModel):
+    competitors_tracked: List[str] = []
+    active_ads: List[TrackedAd] = []
+    winning_hooks: List[str] = []
+    recommended_strategy: str = ""
+
+
+class FeedbackSubmissionRequest(BaseModel):
+    category: str = Field(..., min_length=1, max_length=64)
+    message: str = Field(..., min_length=3, max_length=5000)
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
+    page_context: Optional[str] = Field(default=None, max_length=128)
+
+
+class FeedbackSubmissionResponse(BaseModel):
+    id: uuid.UUID
+    category: str
+    rating: Optional[int]
+    message: str
+    page_context: Optional[str]
+    created_at: datetime
+
+
+class AdSpyRunRequest(BaseModel):
+    query: str = Field(..., min_length=2, max_length=256)
+    brand_filter: Optional[str] = Field(default=None, max_length=128)
+    platform: str = Field(default="facebook", max_length=32)
+
+
+class AdSpySessionResponse(BaseModel):
+    id: uuid.UUID
+    query: str
+    brand_filter: Optional[str]
+    platform: str
+    status: str
+    competitors_tracked: List[str]
+    active_ads: List[TrackedAd]
+    winning_hooks: List[str]
+    recommended_strategy: Optional[str]
+    created_at: datetime

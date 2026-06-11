@@ -22,7 +22,7 @@ const LINKS = [
   {
     title: 'Company',
     items: [
-      { label: 'About', to: '/about' },
+      { label: 'About', to: '/#about' },
       { label: 'Careers', to: '/careers', badge: '2' },
       { label: 'Contact us', to: '/contact' },
     ],

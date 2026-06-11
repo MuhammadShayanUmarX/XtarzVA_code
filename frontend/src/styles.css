@@ -227,6 +227,22 @@
   .btn-proper-secondary:hover {
     border-color: #57534E;
   }
+
+  /* Auth pages — Obsidian + Copper */
+  .auth-input {
+    @apply w-full h-12 bg-landing-elevated border border-landing-divider rounded-lg px-4 text-sm
+           text-landing-primary placeholder-landing-muted
+           focus:outline-none focus:border-landing-accent/50 focus:ring-1 focus:ring-landing-accent/20
+           transition-colors;
+  }
+
+  .auth-input-lg {
+    @apply auth-input h-14 text-base;
+  }
+
+  .auth-label {
+    @apply text-sm font-medium text-landing-secondary;
+  }
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────────── */

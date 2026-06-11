@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Zap, TrendingUp, Users, Globe, CheckCircle2, History, Map, Award, Cpu } from 'lucide-react'
-import { StaticLogo } from '../components/ui/StaticLogo'
-import { useUIStore } from '../store/ui'
+import { ArrowLeft, ArrowRight, Zap, TrendingUp, CheckCircle2 } from 'lucide-react'
+import { XtarzLogo } from '../components/ui/XtarzLogo'
+import Navbar from '../components/landing/Navbar'
+import AboutSection from '../components/landing/AboutSection'
+import Footer from '../components/landing/Footer'
 
 // Shared page shell for simple info pages
 export function PageShell({ children, label, title, subtitle }: {
@@ -20,10 +22,9 @@ export function PageShell({ children, label, title, subtitle }: {
         <Link to="/" className="flex items-center gap-2 text-brand-400 hover:text-brand-50 transition-colors text-sm font-medium">
           <ArrowLeft className="w-4 h-4" /> Back to XtarzVA
         </Link>
-        <div className="flex items-center gap-2 ml-6">
-          <StaticLogo className="w-6 h-6" />
-          <span className="text-sm font-bold text-brand-50">XtarzVA</span>
-        </div>
+        <Link to="/" className="ml-6">
+          <XtarzLogo markClassName="w-6 h-6" textClassName="text-sm font-bold text-brand-50" />
+        </Link>
       </header>
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 pt-32 pb-20">
@@ -128,157 +129,15 @@ export function PricingPage() {
 }
 
 // ── About ────────────────────────────────────────────────────────────────────
-// ── About ────────────────────────────────────────────────────────────────────
 export function AboutPage() {
-  const navigate = useNavigate()
   return (
-    <PageShell 
-      label="About Us" 
-      title={<>Cognitive Intelligence for the <span className="gradient-text">E-commerce Era.</span></>} 
-      subtitle="Bridging the gap between complex data and actionable growth through agentic AI."
-    >
-      <div className="space-y-14">
-        {/* The XtarzVA Story */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="p-8 md:p-10 rounded-3xl border border-white/[0.07] bg-brand-800/30 relative overflow-hidden group shadow-[0_4px_30px_rgba(0,0,0,0.2)] backdrop-blur-md"
-        >
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-accent-primary/[0.02] blur-[80px] rounded-full pointer-events-none" />
-          <h2 className="text-2xl md:text-3xl font-black text-brand-50 mb-6 tracking-tight flex items-center gap-3">
-            <Cpu className="w-6 h-6 text-accent-primary" /> The XtarzVA Story
-          </h2>
-          <div className="space-y-4 text-brand-305 text-sm md:text-base leading-relaxed text-brand-300">
-            <p>
-              XtarzVA (E-commerce Intelligence Assistant) was developed to bridge the gap between complex market data and actionable e-commerce growth. While traditional analytics platforms overwhelm sellers with raw spreadsheets and legacy charts, XtarzVA is engineered as a dynamic cognitive engine that actually understands market sentiment, competitor vulnerability, and consumer desire.
-            </p>
-            <p>
-              By leveraging a collaborative swarm of specialized AI agents working concurrently, XtarzVA shifts the paradigm from manual data extraction to truly autonomous decision-making, giving modern dropshippers and retail brands a multi-day headstart in sourcing winning products.
-            </p>
-          </div>
-        </motion.div>
-
-        {/* About the Founder */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Founder Photo Card */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            transition={{ delay: 0.1 }}
-            className="p-6 rounded-3xl border border-white/[0.07] bg-brand-800/30 flex flex-col items-center justify-center text-center relative overflow-hidden group md:col-span-1 shadow-[0_4px_30px_rgba(0,0,0,0.2)] backdrop-blur-md"
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-accent-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-            <div className="relative w-40 h-40 rounded-2xl overflow-hidden mb-5 border-2 border-accent-primary/30 group-hover:border-accent-primary transition-all duration-300 shadow-[0_0_20px_rgba(79,110,247,0.15)] group-hover:shadow-[0_0_30px_rgba(79,110,247,0.3)]">
-              <img 
-                src="/founder_image.png" 
-                alt="Muhammad Shayan Umar" 
-                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80"
-                }}
-              />
-            </div>
-            <h3 className="text-brand-50 font-black text-lg mb-1 tracking-tight">Muhammad Shayan Umar</h3>
-            <p className="text-accent-primary text-xs font-black uppercase tracking-widest mb-4">Founder & Lead Architect</p>
-            
-            {/* Tech badges */}
-            <div className="flex flex-wrap justify-center gap-1.5 mt-2">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-900 text-brand-300 border border-brand-700">AI/ML Engineer</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-900 text-brand-300 border border-brand-700">NLP & Swarms</span>
-            </div>
-          </motion.div>
-
-          {/* Founder Bio and Recognition */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }} 
-            animate={{ opacity: 1, x: 0 }} 
-            transition={{ delay: 0.15 }}
-            className="p-8 rounded-3xl border border-white/[0.07] bg-brand-800/30 md:col-span-2 flex flex-col justify-between shadow-[0_4px_30px_rgba(0,0,0,0.2)] backdrop-blur-md"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-accent-violet/10 text-accent-violet border border-accent-violet/20 uppercase tracking-widest">Islamabad, Pakistan</span>
-              </div>
-              <h2 className="text-2xl font-black text-brand-50 leading-tight">Engineering "Radical Utility" for Global Businesses</h2>
-              <p className="text-brand-300 text-sm leading-relaxed">
-                Shayan Umar is an AI/ML Engineer who builds solutions prioritizing immediate, compounding value—ensuring every agentic workflow tackles high-level operational bottlenecks. 
-              </p>
-              <p className="text-brand-400 text-sm leading-relaxed">
-                His journey spans years of deep technical building under XtarzLab, designing custom cognitive ecosystems, fine-tuning visual models, and deploying automated agent architectures optimized for low-latency market signals.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/[0.05]">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-accent-primary flex-shrink-0">
-                  <Award className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-brand-50 font-bold text-xs">AISKILLBRIDGE Program</h4>
-                  <p className="text-brand-500 text-[11px]">Ranked in the top 1% of the Agentic AI program.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-accent-violet/10 border border-accent-violet/20 flex items-center justify-center text-accent-violet flex-shrink-0">
-                  <Award className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-brand-50 font-bold text-xs">NACTA Hackathon Winner</h4>
-                  <p className="text-brand-500 text-[11px]">National Hackathon winner focusing on advanced intelligence models.</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Vision & Mission */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            className="p-8 rounded-3xl border border-accent-primary/10 bg-accent-primary/[0.02] relative overflow-hidden group shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm"
-          >
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none">
-              <Globe className="w-24 h-24 text-accent-primary" />
-            </div>
-            <h3 className="text-lg font-black text-brand-50 mb-4 flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-accent-primary shadow-[0_0_10px_rgba(79,110,247,0.5)]" /> Vision
-            </h3>
-            <p className="text-brand-400 text-sm leading-relaxed">
-              To establish the global standard for autonomous digital enterprise, establishing a future where specialized agentic swarms handle complex, high-friction analysis, freeing human creators to focus entirely on creative positioning, brand strategy, and scaling connections.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            className="p-8 rounded-3xl border border-accent-violet/10 bg-accent-violet/[0.02] relative overflow-hidden group shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm"
-          >
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none">
-              <Zap className="w-24 h-24 text-accent-violet" />
-            </div>
-            <h3 className="text-lg font-black text-brand-50 mb-4 flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-accent-violet shadow-[0_0_10px_rgba(167,139,250,0.5)]" /> Mission
-            </h3>
-            <p className="text-brand-400 text-sm leading-relaxed">
-              To dismantle the complexity of data collection, trend prediction, creative engineering, and Shopify logistics. We deploy secure, hyper-optimized LLM agent systems that act, evaluate, self-correct, and execute in real-time, removing weeks of human lag.
-            </p>
-          </motion.div>
-        </div>
-
-
-
-        <div className="text-center pt-6">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-black text-brand-50 transition-all hover:brightness-110 shadow-[0_0_24px_rgba(79,110,247,0.3)] hover:scale-[1.02]" 
-            style={{ background: 'linear-gradient(135deg, #4f6ef7, #a78bfa)' }}
-          >
-             Go to Dashboard <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </PageShell>
+    <div className="bg-landing-bg min-h-screen text-landing-primary selection:bg-landing-accent/25 font-sans">
+      <Navbar />
+      <main className="pt-16">
+        <AboutSection />
+      </main>
+      <Footer />
+    </div>
   )
 }
 

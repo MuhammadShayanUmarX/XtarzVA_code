@@ -38,6 +38,9 @@ const AgentWorkflowPage = lazy(() => import('./pages/dashboard/AgentWorkflowPage
 const InsightsPage = lazy(() => import('./pages/dashboard/InsightsPage'))
 const RunsHistoryPage = lazy(() => import('./pages/dashboard/RunsHistoryPage'))
 const MetaAdsPage = lazy(() => import('./pages/dashboard/MetaAdsPage'))
+const AdSpyPage = lazy(() => import('./pages/dashboard/AdSpyPage'))
+const HelpCenterPage = lazy(() => import('./pages/dashboard/HelpCenterPage'))
+const FeedbackPage = lazy(() => import('./pages/dashboard/FeedbackPage'))
 const SourcingPage = lazy(() => import('./pages/dashboard/SourcingPage'))
 
 function PublicOnly({ children }: { children: ReactNode }) {
@@ -96,8 +99,11 @@ export default function App() {
             <Route path="/dashboard/agents/:agentId" element={<ProtectedRoute><AgentConsolePage /></ProtectedRoute>} />
             <Route path="/dashboard/workflow" element={<ProtectedRoute><AgentWorkflowPage /></ProtectedRoute>} />
             <Route path="/dashboard/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
+            <Route path="/dashboard/ad-spy" element={<ProtectedRoute><AdSpyPage /></ProtectedRoute>} />
             <Route path="/dashboard/ads" element={<ProtectedRoute><MetaAdsPage /></ProtectedRoute>} />
             <Route path="/dashboard/sourcing" element={<ProtectedRoute><SourcingPage /></ProtectedRoute>} />
+            <Route path="/dashboard/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
+            <Route path="/dashboard/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
           </Route>
 
           <Route path="/privacy" element={<PrivacyPolicy />} />

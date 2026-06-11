@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
-import Logo3D from './Logo3D'
+import { XtarzLogo } from './XtarzLogo'
 
 interface SkeletonProps {
   className?: string
@@ -18,44 +18,28 @@ export function LoadingScreen() {
        initial={{ opacity: 1 }}
        exit={{ opacity: 0, scale: 1.05 }}
        transition={{ duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] }}
-       className="fixed inset-0 z-[100] bg-brand-950 flex flex-col items-center justify-center overflow-hidden"
+       className="fixed inset-0 z-[100] bg-landing-bg flex flex-col items-center justify-center overflow-hidden"
      >
-        {/* Stellar Background elements */}
         <div className="absolute inset-0 pointer-events-none">
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent-primary/10 rounded-full blur-[120px] animate-pulse-slow" />
-           <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full blur-[1px] animate-twinkle" />
-           <div className="absolute bottom-1/3 right-1/4 w-1 h-1 bg-white rounded-full blur-[1px] animate-twinkle delay-700" />
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-landing-accent/10 rounded-full blur-[120px] animate-pulse-slow" />
         </div>
 
-        {/* 3D Background & Logo */}
-        <Logo3D />
-
-        {/* Content Overlay */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="relative z-10 text-center px-6"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative z-10 text-center px-6 space-y-6"
         >
-           <div className="pt-24 md:pt-32"> {/* Offset for the centered 3D Logo */}
-              <motion.h1 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 1 }}
-                className="text-4xl md:text-5xl font-bold text-white tracking-tighter"
-              >
-                XtarzVA
-              </motion.h1>
+           <XtarzLogo markClassName="w-16 h-16 mx-auto" textClassName="text-3xl font-black text-white" />
               
               <motion.p
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.6 }}
-                transition={{ delay: 0.8, duration: 1 }}
-                className="text-brand-300 mt-3 text-sm md:text-base tracking-[0.2em] uppercase font-medium"
+                animate={{ opacity: 0.7 }}
+                transition={{ delay: 0.4, duration: 1 }}
+                className="text-landing-secondary text-sm tracking-wide font-medium"
               >
-                Virtual Assistance, Stellar Results
+                Loading your workspace...
               </motion.p>
-           </div>
         </motion.div>
 
         {/* Progress Indicator */}
@@ -65,7 +49,7 @@ export function LoadingScreen() {
                 initial={{ left: "-100%" }}
                 animate={{ left: "100%" }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-accent-primary to-transparent"
+                className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-landing-accent to-transparent"
               />
            </div>
            <motion.p 

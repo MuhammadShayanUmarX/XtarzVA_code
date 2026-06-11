@@ -9,7 +9,7 @@ export function getApiErrorMessage(err: unknown, fallback = 'Something went wron
     if (axiosErr.code === 'ECONNABORTED') {
       return 'Request timed out. Please check your connection and try again.'
     }
-    return 'Cannot connect to server. Make sure the backend is running on port 8000.'
+    return 'Cannot connect to server. Start the XtarzVA backend (see backend/README.md).'
   }
 
   const detail = axiosErr.response.data?.detail

@@ -51,7 +51,7 @@ export default function MetaAdsPage() {
             <h1 className="text-4xl font-black text-landing-primary tracking-tight">Ad Creative</h1>
           </div>
           <p className="text-lg text-landing-secondary font-medium leading-relaxed max-w-2xl">
-            SEO titles, product copy, Shopify tags, ad hooks, UGC scripts, and Meta ad creatives — powered by Gemini and Imagen.
+            SEO titles, product copy, Shopify tags, ad hooks, UGC scripts, and creative images — powered by Gemini and Imagen.
           </p>
         </div>
       </header>

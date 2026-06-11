@@ -158,3 +158,32 @@ class ContactSubmission(Base):
     topic: Mapped[str] = mapped_column(String, nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class FeedbackSubmission(Base):
+    __tablename__ = "feedback_submissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    category: Mapped[str] = mapped_column(String, nullable=False)
+    rating: Mapped[Optional[int]] = mapped_column(Integer)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    page_context: Mapped[Optional[str]] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AdSpySession(Base):
+    __tablename__ = "ad_spy_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    query: Mapped[str] = mapped_column(String, nullable=False)
+    brand_filter: Mapped[Optional[str]] = mapped_column(String)
+    platform: Mapped[str] = mapped_column(String, default="facebook")
+    status: Mapped[str] = mapped_column(String, default="completed")
+    competitors_tracked: Mapped[List[str]] = mapped_column(JSON, default=list)
+    active_ads: Mapped[List[Dict]] = mapped_column(JSON, default=list)
+    winning_hooks: Mapped[List[str]] = mapped_column(JSON, default=list)
+    recommended_strategy: Mapped[Optional[str]] = mapped_column(Text)
+    raw_research: Mapped[List[Dict]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

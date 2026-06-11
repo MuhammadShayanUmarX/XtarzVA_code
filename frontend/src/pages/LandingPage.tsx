@@ -9,6 +9,7 @@ import MarginSupplier from '../components/landing/MarginSupplier'
 import ContentGeneration from '../components/landing/ContentGeneration'
 import ShopifyDeployment from '../components/landing/ShopifyDeployment'
 import EarlyAccess from '../components/landing/EarlyAccess'
+import AboutSection from '../components/landing/AboutSection'
 import Testimonials from '../components/landing/Testimonials'
 import Pricing from '../components/landing/Pricing'
 import FinalCTA from '../components/landing/FinalCTA'
@@ -39,11 +40,13 @@ export default function LandingPage() {
         <ShopifyDeployment />
         {/* 9. How It Works — simple 3 steps */}
         <EarlyAccess />
-        {/* 10. Testimonials — real results */}
+        {/* 10. About — founder, vision, mission */}
+        <AboutSection />
+        {/* 11. Testimonials — real results */}
         <Testimonials />
-        {/* 11. Pricing */}
+        {/* 12. Pricing */}
         <Pricing />
-        {/* 12. Final CTA */}
+        {/* 13. Final CTA */}
         <FinalCTA />
       </main>
       {/* Footer */}
