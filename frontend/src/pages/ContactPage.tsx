@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Mail, MessageSquare, MapPin, Clock, ArrowLeft, Send, CheckCircle2, Zap } from 'lucide-react'
 import api from '../lib/api'
 import { toast } from 'react-hot-toast'
+import { XtarzLogo } from '../components/ui/XtarzLogo'
 
 const TOPICS = [
   'General Enquiry',
@@ -70,12 +71,9 @@ export default function ContactPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to XtarzVA
         </Link>
-        <div className="flex items-center gap-2 ml-6">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4f6ef7, #a78bfa)' }}>
-            <span className="text-brand-50 text-[9px] font-black font-mono">X</span>
-          </div>
-          <span className="text-sm font-bold text-brand-50">XtarzVA</span>
-        </div>
+        <Link to="/" className="ml-6">
+          <XtarzLogo textClassName="text-sm font-bold text-brand-50" />
+        </Link>
       </header>
 
       <main className="relative z-10 max-w-6xl mx-auto px-6 py-20">

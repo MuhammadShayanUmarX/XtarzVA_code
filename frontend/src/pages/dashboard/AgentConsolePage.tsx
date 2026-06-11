@@ -32,7 +32,7 @@ const AGENTS_CONFIG: Record<string, any> = {
  product_intelligence: { name: 'Product Intelligence', icon: Search, color: 'cyan', role: 'Market Discovery & Trend Analysis' },
  competitor_intelligence: { name: 'Competitor Intelligence', icon: Target, color: 'rose', role: 'Competitor Benchmarking & Pricing' },
  product_sourcing: { name: 'Product Sourcing', icon: Package, color: 'indigo', role: 'Supplier Verification & Cost Analysis' },
- meta_ads_spy: { name: 'Ad Creative', icon: Zap, color: 'violet', role: 'SEO, Product Copy, Tags & Meta Ads' },
+ meta_ads_spy: { name: 'Ad Creative', icon: Zap, color: 'violet', role: 'SEO, Product Copy, Tags & Ad Creatives' },
  commerce_creation: { name: 'Store Builder', icon: TrendingUp, color: 'emerald', role: 'Shopify OS 2.0 Theme Generation' },
 }
 

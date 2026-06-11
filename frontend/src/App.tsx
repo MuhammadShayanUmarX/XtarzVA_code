@@ -24,6 +24,8 @@ const FeaturesPage = lazy(() => import('./pages/InfoPages').then(m => ({ default
 const PricingPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.PricingPage })))
 const AboutPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.AboutPage })))
 const BlogPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.BlogPage })))
+const SuccessStoriesPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.SuccessStoriesPage })))
+const TutorialsPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.TutorialsPage })))
 const CareersPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.CareersPage })))
 const ChangelogPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.ChangelogPage })))
 const RoadmapPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.RoadmapPage })))
@@ -38,6 +40,9 @@ const AgentWorkflowPage = lazy(() => import('./pages/dashboard/AgentWorkflowPage
 const InsightsPage = lazy(() => import('./pages/dashboard/InsightsPage'))
 const RunsHistoryPage = lazy(() => import('./pages/dashboard/RunsHistoryPage'))
 const MetaAdsPage = lazy(() => import('./pages/dashboard/MetaAdsPage'))
+const AdSpyPage = lazy(() => import('./pages/dashboard/AdSpyPage'))
+const HelpCenterPage = lazy(() => import('./pages/dashboard/HelpCenterPage'))
+const FeedbackPage = lazy(() => import('./pages/dashboard/FeedbackPage'))
 const SourcingPage = lazy(() => import('./pages/dashboard/SourcingPage'))
 
 function PublicOnly({ children }: { children: ReactNode }) {
@@ -96,8 +101,11 @@ export default function App() {
             <Route path="/dashboard/agents/:agentId" element={<ProtectedRoute><AgentConsolePage /></ProtectedRoute>} />
             <Route path="/dashboard/workflow" element={<ProtectedRoute><AgentWorkflowPage /></ProtectedRoute>} />
             <Route path="/dashboard/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
+            <Route path="/dashboard/ad-spy" element={<ProtectedRoute><AdSpyPage /></ProtectedRoute>} />
             <Route path="/dashboard/ads" element={<ProtectedRoute><MetaAdsPage /></ProtectedRoute>} />
             <Route path="/dashboard/sourcing" element={<ProtectedRoute><SourcingPage /></ProtectedRoute>} />
+            <Route path="/dashboard/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
+            <Route path="/dashboard/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
           </Route>
 
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -109,6 +117,8 @@ export default function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/blog" element={<BlogPage />} />
+          <Route path="/success-stories" element={<SuccessStoriesPage />} />
+          <Route path="/tutorials" element={<TutorialsPage />} />
           <Route path="/careers" element={<CareersPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/roadmap" element={<RoadmapPage />} />

@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import {
  LayoutDashboard,
@@ -13,24 +13,28 @@ import {
  Sparkles,
  LogOut,
  Menu,
- Activity,
  Store,
  Megaphone,
- Wand2
+ Wand2,
+ Eye,
+ MessageSquare
 } from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
 import { cn } from '../../lib/utils'
 import { useUIStore } from '../../store/ui'
 import { useSession } from '../../store/session'
-import api from '../../lib/api'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { getInitials, getPlanLabel } from '../../lib/plans'
 import CommandPalette from './CommandPalette'
 import NotificationPopover from './NotificationPopover'
+import { XtarzLogo } from '../ui/XtarzLogo'
 
 const NAV_ITEMS = [
  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
  { label: 'Product Discovery', icon: Sparkles, path: '/dashboard/products' },
  { label: 'Competitor Intel', icon: Store, path: '/dashboard/insights' },
- { label: 'Meta Ad Creative', icon: Megaphone, path: '/dashboard/ads' },
+ { label: 'Ad Spying', icon: Eye, path: '/dashboard/ad-spy' },
+ { label: 'Ad Creative', icon: Megaphone, path: '/dashboard/ads' },
  { label: 'Sourcing Agent', icon: Package, path: '/dashboard/sourcing' },
  { label: 'Store Builder', icon: Wand2, path: '/dashboard/shopify' },
  { label: 'Analytics', icon: BarChart2, path: '/dashboard/analytics' },
@@ -40,25 +44,14 @@ const NAV_ITEMS = [
 
 export default function DashboardShell({ children }: { children?: ReactNode }) {
  const { sidebarCollapsed, toggleSidebar } = useUIStore()
- const { clear, accessToken } = useSession()
+ const { clear } = useSession()
+ const { user } = useCurrentUser()
  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
- 
- const [userInfo, setUserInfo] = useState({ email: '', name: 'Loading...', initials: '' })
 
- useEffect(() => {
- if (accessToken) {
- api.get('/v2/auth/me')
- .then(res => {
- const email = res.data.email || 'user@example.com'
- const name = res.data.name || res.data.full_name || email.split('@')[0]
- const initials = name.substring(0, 2).toUpperCase()
- setUserInfo({ email, name, initials })
- })
- .catch(err => {
- if (err.response?.status === 401) clear()
- })
- }
- }, [accessToken, clear])
+ const displayName = user?.name || 'Loading...'
+ const displayEmail = user?.email || ''
+ const initials = user ? getInitials(user.name, user.email) : '…'
+ const planLabel = user ? `${getPlanLabel(user.plan)} Plan` : 'Loading...'
 
  const location = useLocation()
 
@@ -77,12 +70,7 @@ export default function DashboardShell({ children }: { children?: ReactNode }) {
  <div className="p-8 border-b border-landing-divider/30">
  <div className="flex items-center justify-between">
  <Link to="/dashboard" className="flex items-center gap-4 group">
- <div className="w-10 h-10 rounded-xl bg-landing-accent text-white flex items-center justify-center font-black text-xl shadow-sm">
- X
- </div>
- {!sidebarCollapsed && (
- <span className="font-black text-xl tracking-tighter text-white">Xtarz AI</span>
- )}
+ <XtarzLogo showText={!sidebarCollapsed} textClassName="font-black text-xl tracking-tighter text-white" />
  </Link>
  </div>
  </div>
@@ -115,14 +103,14 @@ export default function DashboardShell({ children }: { children?: ReactNode }) {
  <section className="space-y-4 px-4">
  <p className="text-[10px] font-black text-landing-muted tracking-tight">Support</p>
  <div className="space-y-2">
- <button className="w-full flex items-center gap-4 py-2.5 text-xs font-black text-landing-secondary hover:text-white transition-all tracking-tight group">
+ <Link to="/dashboard/help" className="w-full flex items-center gap-4 py-2.5 text-xs font-black text-landing-secondary hover:text-white transition-all tracking-tight group">
  <HelpCircle size={18} className="text-landing-muted group-hover:text-landing-accent transition-colors" />
  <span>Help Center</span>
- </button>
- <button className="w-full flex items-center gap-4 py-2.5 text-xs font-black text-landing-secondary hover:text-white transition-all tracking-tight group">
- <Activity size={18} className="text-landing-muted group-hover:text-landing-accentSoft transition-colors" />
- <span>System Status</span>
- </button>
+ </Link>
+ <Link to="/dashboard/feedback" className="w-full flex items-center gap-4 py-2.5 text-xs font-black text-landing-secondary hover:text-white transition-all tracking-tight group">
+ <MessageSquare size={18} className="text-landing-muted group-hover:text-landing-accentSoft transition-colors" />
+ <span>Feedback</span>
+ </Link>
  </div>
  </section>
  )}
@@ -137,14 +125,14 @@ export default function DashboardShell({ children }: { children?: ReactNode }) {
  )}>
  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-landing-accent to-landing-accentSoft p-px shadow-sm">
  <div className="w-full h-full rounded-[15px] bg-landing-bg flex items-center justify-center text-white text-sm font-black uppercase">
- {userInfo.initials}
+ {initials}
  </div>
  </div>
  {!sidebarCollapsed && (
  <>
  <div className="flex-1 min-w-0">
- <p className="text-sm font-black text-white truncate">{userInfo.name}</p>
- <p className="text-[10px] text-landing-accent font-black tracking-tight">Active Plan</p>
+ <p className="text-sm font-black text-white truncate">{displayName}</p>
+ <p className="text-[10px] text-landing-accent font-black tracking-tight">{planLabel}</p>
  </div>
  <ChevronUp size={16} className="text-landing-muted group-hover:text-white transition-all" />
  </>
@@ -160,13 +148,13 @@ export default function DashboardShell({ children }: { children?: ReactNode }) {
  <div className="space-y-2">
  <div className="px-3 py-2">
  <p className="text-[10px] font-black text-landing-muted tracking-tight">Account Info</p>
- <p className="text-xs font-bold text-white mt-1 truncate">{userInfo.email}</p>
+ <p className="text-xs font-bold text-white mt-1 truncate">{displayEmail}</p>
  </div>
  <div className="h-px bg-landing-divider/20 mx-2" />
- <button className="w-full flex items-center gap-3 px-3 py-3 text-xs font-black text-landing-secondary hover:text-white hover:bg-landing-surface/50 rounded-xl transition-all tracking-tight">
+ <Link to="/dashboard/settings" className="w-full flex items-center gap-3 px-3 py-3 text-xs font-black text-landing-secondary hover:text-white hover:bg-landing-surface/50 rounded-xl transition-all tracking-tight">
  <Settings size={16} />
  Settings
- </button>
+ </Link>
  <button
  onClick={() => clear()}
  className="w-full flex items-center gap-3 px-3 py-3 text-xs font-black text-[#E57373] hover:bg-[#E57373]/10 rounded-xl transition-all tracking-tight"

@@ -3,7 +3,7 @@ import { Command } from 'cmdk'
 import { Dialog, DialogContent } from '@radix-ui/react-dialog'
 import {
   Search, Zap, BarChart2, ShoppingBag, Settings,
-  History, Package, Sparkles, ChevronRight, Store, Megaphone, Wand2
+  History, Package, Sparkles, ChevronRight, Store, Megaphone, Wand2, Eye, HelpCircle, MessageSquare
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -58,8 +58,9 @@ export default function CommandPalette({ open, setOpen }: { open: boolean, setOp
               <Command.Group heading="Quick Actions" className="text-[11px] font-black text-landing-muted px-4 py-3 tracking-tight">
                 <CommandItem icon={Sparkles} label="Product Discovery" sub="Find winning products" onSelect={() => runCommand(() => navigate('/dashboard/products'))} />
                 <CommandItem icon={Store} label="Competitor Intel" sub="Research your competition" onSelect={() => runCommand(() => navigate('/dashboard/insights'))} />
+                <CommandItem icon={Eye} label="Ad Spying" sub="Track competitor ads" onSelect={() => runCommand(() => navigate('/dashboard/ad-spy'))} />
                 <CommandItem icon={Package} label="Source Suppliers" sub="Find the best margins" onSelect={() => runCommand(() => navigate('/dashboard/sourcing'))} />
-                <CommandItem icon={Megaphone} label="Ad Creative" sub="SEO, copy, tags, and Meta ads" onSelect={() => runCommand(() => navigate('/dashboard/ads'))} />
+                <CommandItem icon={Megaphone} label="Ad Creative" sub="SEO, copy, tags, and creatives" onSelect={() => runCommand(() => navigate('/dashboard/ads'))} />
                 <CommandItem icon={Wand2} label="Store Builder" sub="Download Shopify theme ZIP" onSelect={() => runCommand(() => navigate('/dashboard/shopify'))} />
               </Command.Group>
 
@@ -68,6 +69,8 @@ export default function CommandPalette({ open, setOpen }: { open: boolean, setOp
                 <CommandItem icon={History} label="Run History" sub="Browse past scans" onSelect={() => runCommand(() => navigate('/dashboard/runs'))} />
                 <CommandItem icon={ShoppingBag} label="Shopify Sync" sub="Manage store connection" onSelect={() => runCommand(() => navigate('/dashboard/shopify'))} />
                 <CommandItem icon={Settings} label="Settings" sub="Account and preferences" onSelect={() => runCommand(() => navigate('/dashboard/settings'))} />
+                <CommandItem icon={HelpCircle} label="Help Center" sub="Guides and FAQs" onSelect={() => runCommand(() => navigate('/dashboard/help'))} />
+                <CommandItem icon={MessageSquare} label="Feedback" sub="Share bugs and ideas" onSelect={() => runCommand(() => navigate('/dashboard/feedback'))} />
               </Command.Group>
             </Command.List>
 

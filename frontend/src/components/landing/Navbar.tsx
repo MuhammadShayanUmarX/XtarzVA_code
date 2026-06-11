@@ -1,32 +1,43 @@
 import { useState, useEffect } from 'react'
 import { Menu, X, ArrowRight } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { XtarzLogo } from '../ui/XtarzLogo'
 
 const NAV_LINKS = [
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Features', href: '#features' },
-  { label: 'Results', href: '#results' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'How it works', to: '/#how-it-works', sectionId: 'how-it-works' },
+  { label: 'Features', to: '/#features', sectionId: 'features' },
+  { label: 'About', to: '/#about', sectionId: 'about' },
+  { label: 'Results', to: '/#results', sectionId: 'results' },
+  { label: 'Pricing', to: '/#pricing', sectionId: 'pricing' },
 ]
+
+function scrollToSection(sectionId: string) {
+  const el = document.getElementById(sectionId)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('')
+  const location = useLocation()
+  const isHome = location.pathname === '/'
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
 
-      const sections = NAV_LINKS.map((link) => link.href.substring(1))
-      for (const section of sections) {
-        const el = document.getElementById(section)
+      if (!isHome) return
+
+      for (const link of NAV_LINKS) {
+        const el = document.getElementById(link.sectionId)
         if (el) {
           const rect = el.getBoundingClientRect()
           if (rect.top <= 100 && rect.bottom >= 100) {
-            setActiveSection(section)
+            setActiveSection(link.sectionId)
             break
           }
         }
@@ -35,16 +46,20 @@ export default function Navbar() {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [isHome])
 
-  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault()
-    const targetId = href.replace('#', '')
-    const targetElement = document.getElementById(targetId)
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+  useEffect(() => {
+    if (!isHome || !location.hash) return
+    const id = location.hash.replace('#', '')
+    const timer = window.setTimeout(() => scrollToSection(id), 100)
+    return () => window.clearTimeout(timer)
+  }, [isHome, location.hash])
+
+  const handleNavClick = (sectionId: string) => {
     setIsMobileMenuOpen(false)
+    if (isHome) {
+      scrollToSection(sectionId)
+    }
   }
 
   return (
@@ -63,19 +78,19 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-1">
           {NAV_LINKS.map((link) => (
-            <a
+            <RouterLink
               key={link.label}
-              href={link.href}
-              onClick={(e) => scrollToSection(e, link.href)}
+              to={link.to}
+              onClick={() => handleNavClick(link.sectionId)}
               className={cn(
                 'px-3.5 py-2 text-sm font-medium transition-colors duration-200 rounded-lg',
-                activeSection === link.href.substring(1)
+                isHome && activeSection === link.sectionId
                   ? 'text-landing-accent'
                   : 'text-landing-secondary hover:text-landing-primary'
               )}
             >
               {link.label}
-            </a>
+            </RouterLink>
           ))}
         </div>
 
@@ -106,14 +121,14 @@ export default function Navbar() {
         <div className="absolute top-20 left-4 right-4 bg-landing-surface border border-landing-divider rounded-xl md:hidden overflow-hidden pointer-events-auto shadow-lg">
           <div className="flex flex-col p-4 gap-1">
             {NAV_LINKS.map((link) => (
-              <a
+              <RouterLink
                 key={link.label}
-                href={link.href}
-                onClick={(e) => scrollToSection(e, link.href)}
+                to={link.to}
+                onClick={() => handleNavClick(link.sectionId)}
                 className="text-sm font-medium text-landing-secondary hover:text-landing-primary py-2.5 px-3 rounded-lg hover:bg-landing-elevated transition-colors"
               >
                 {link.label}
-              </a>
+              </RouterLink>
             ))}
             <div className="h-px bg-landing-divider my-2" />
             <RouterLink

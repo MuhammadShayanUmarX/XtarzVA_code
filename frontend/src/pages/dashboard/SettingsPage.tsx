@@ -8,7 +8,6 @@ import {
  Share2, 
  AlertTriangle,
  Brain,
- Key
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -19,7 +18,6 @@ import AgentDefaults from '../../components/dashboard/settings/AgentDefaults'
 import BillingSettings from '../../components/dashboard/settings/BillingSettings'
 import IntegrationSettings from '../../components/dashboard/settings/IntegrationSettings'
 import NotificationSettings from '../../components/dashboard/settings/NotificationSettings'
-import APISettings from '../../components/dashboard/settings/APISettings'
 import DangerZone from '../../components/dashboard/settings/DangerZone'
 
 const NAV_ITEMS = [
@@ -29,7 +27,6 @@ const NAV_ITEMS = [
  { id: 'billing', label: 'Billing & Plan', icon: CreditCard },
  { id: 'integrations', label: 'Integrations', icon: Share2 },
  { id: 'notifications', label: 'Notifications', icon: Bell },
- { id: 'api', label: 'API Keys', icon: Key },
  { id: 'danger', label: 'Danger Zone', icon: AlertTriangle, color: 'text-accent-rose' }
 ]
 
@@ -87,7 +84,6 @@ export default function SettingsPage() {
  {activeTab === 'billing' && <BillingSettings />}
  {activeTab === 'integrations' && <IntegrationSettings />}
  {activeTab === 'notifications' && <NotificationSettings />}
- {activeTab === 'api' && <APISettings />}
  {activeTab === 'danger' && <DangerZone />}
  </motion.div>
  </AnimatePresence>

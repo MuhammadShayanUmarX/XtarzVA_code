@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion'
 import { PageShell } from './InfoPages'
 
+const LEGAL_CARD = 'landing-card p-8'
+
 export default function PrivacyPolicy() {
   const sections = [
     { title: '1. Introduction', content: 'XtarzVA ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.' },
@@ -10,24 +12,31 @@ export default function PrivacyPolicy() {
   ]
 
   return (
-    <PageShell 
-      label="Legal" 
-      title={<>Privacy <span className="gradient-text">Policy.</span></>} 
+    <PageShell
+      label="Legal"
+      title={<>Privacy <span className="gradient-text">Policy</span></>}
       subtitle={`Last updated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`}
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         {sections.map((section, i) => (
-          <motion.div key={section.title} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className="p-8 rounded-2xl border border-white/[0.07] bg-brand-800/30">
-            <h2 className="text-xl font-black text-white mb-4">{section.title}</h2>
-            <p className="text-brand-400 leading-relaxed text-sm">{section.content}</p>
+          <motion.div
+            key={section.title}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08 }}
+            className={LEGAL_CARD}
+          >
+            <h2 className="text-lg font-semibold text-landing-primary mb-3">{section.title}</h2>
+            <p className="text-landing-secondary leading-relaxed text-sm">{section.content}</p>
           </motion.div>
         ))}
-        <div className="text-center pt-8">
-          <p className="text-xs text-brand-600">Questions about your privacy? Email us at privacy@xtarzva.com</p>
-        </div>
+        <p className="text-center text-xs text-landing-muted pt-4">
+          Questions about your privacy? Email us at{' '}
+          <a href="mailto:privacy@xtarzva.com" className="text-landing-accent hover:text-landing-accentSoft transition-colors">
+            privacy@xtarzva.com
+          </a>
+        </p>
       </div>
     </PageShell>
   )
 }
-

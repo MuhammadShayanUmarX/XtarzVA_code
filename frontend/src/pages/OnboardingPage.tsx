@@ -25,6 +25,7 @@ import * as Switch from '@radix-ui/react-switch'
 import * as Slider from '@radix-ui/react-slider'
 import confetti from 'canvas-confetti'
 import { cn } from '../lib/utils'
+import { XtarzLogo } from '../components/ui/XtarzLogo'
 
 // Types
 type Step = 1 | 2 | 3 | 4
@@ -103,12 +104,9 @@ export default function OnboardingPage() {
       
       {/* Progress Header */}
       <header className="fixed top-0 left-0 right-0 h-16 border-b border-brand-700 bg-brand-950/80 backdrop-blur-md z-50 flex items-center justify-between px-8">
-        <div className="flex items-center gap-2">
-           <div className="w-8 h-8 rounded-lg bg-gradient-cta flex items-center justify-center">
-              <span className="text-brand-50 text-xs font-bold font-mono">X</span>
-           </div>
-           <span className="font-display font-bold text-lg tracking-tight hidden sm:block">XtarzVA</span>
-        </div>
+        <Link to="/dashboard">
+          <XtarzLogo markClassName="w-8 h-8" textClassName="font-bold text-lg tracking-tight text-brand-50 hidden sm:inline" />
+        </Link>
 
         <div className="flex items-center gap-12">
            {[1, 2, 3, 4].map((s) => {

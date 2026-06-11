@@ -37,7 +37,7 @@ export const WORKFLOW_AGENTS: AgentStep[] = [
     name: 'Ad Creative',
     icon: Megaphone,
     color: 'violet',
-    description: 'SEO, product copy, tags, ad hooks, UGC scripts, and Meta ad creatives.',
+    description: 'SEO, product copy, tags, ad hooks, UGC scripts, and creative images.',
   },
   {
     id: 'commerce_creation',

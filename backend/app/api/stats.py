@@ -10,8 +10,17 @@ from ..core.auth import get_current_user
 from ..models.models import Run, User
 from ..models.schemas import EngineStage
 from ..services.activity_summary import build_activity_summary, compute_activity_totals
+from ..agents.definitions import get_agent_definition
 
 router = APIRouter()
+
+AGENT_STAGES = [
+    EngineStage.PRODUCT_INTELLIGENCE.value,
+    EngineStage.COMPETITOR_INTELLIGENCE.value,
+    EngineStage.PRODUCT_SOURCING.value,
+    EngineStage.META_ADS_SPY.value,
+    EngineStage.COMMERCE_CREATION.value,
+]
 
 RANGE_DAYS = {"7d": 7, "30d": 30, "90d": 90, "all": 1825}
 
@@ -50,6 +59,47 @@ def _in_range(created_at: Optional[datetime], days: int) -> bool:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     ts = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
     return ts >= cutoff
+
+
+def _run_matches_stage(run: Run, stage: str) -> bool:
+    ed = run.engine_data or {}
+    agent = run.agent or run.current_stage or ""
+    return agent == stage or bool(ed.get(stage))
+
+
+@router.get("/agents")
+async def get_agent_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    runs = await _get_user_runs(db, current_user)
+    agents = []
+    for stage in AGENT_STAGES:
+        stage_runs = [r for r in runs if _run_matches_stage(r, stage)]
+        completed = [r for r in stage_runs if r.status == "completed"]
+        failed = [r for r in stage_runs if r.status == "failed"]
+        running = [r for r in stage_runs if r.status == "running"]
+        total = len(stage_runs)
+        success_rate = round((len(completed) / total) * 100, 1) if total else None
+        definition = get_agent_definition(stage)
+        if running:
+            status = "running"
+        elif total and len(completed) == total:
+            status = "done"
+        else:
+            status = "idle"
+        agents.append({
+            "id": stage,
+            "name": definition["name"],
+            "role": definition["role"],
+            "goal": definition["goal"],
+            "tasks": total,
+            "completed": len(completed),
+            "failed": len(failed),
+            "success_rate": success_rate,
+            "status": status,
+        })
+    return {"agents": agents, "total_online": len(AGENT_STAGES)}
 
 
 @router.get("/overview")

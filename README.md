@@ -15,7 +15,7 @@ Agentic commerce research and launch platform — product discovery, competitor 
 cd backend
 cp .env.example .env   # add your API keys
 pip install -r requirements.txt
-python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8002 --reload
+python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 ### Frontend

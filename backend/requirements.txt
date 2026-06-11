@@ -1,5 +1,10 @@
 # XtarzVA Backend — Python 3.10+ required
-# Install: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+# Install:
+#   cd backend
+#   python3 -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# Covers: auth, agents, ad spy, feedback/support, stats, Shopify theme export, Gemini + Imagen.
 
 # --- Web framework ---
 fastapi>=0.110.0,<1.0
@@ -26,13 +31,12 @@ apify-client>=1.6.0
 tavily-python>=0.3.0
 firecrawl-py>=1.0.0
 
-# --- LLM & agents (LangChain + Google Gemini) ---
+# --- LLM & agents (LangChain + Google Gemini text + Imagen images) ---
 langchain>=0.3.0,<2.0
 langchain-core>=0.3.0,<2.0
-langchain-google-genai>=2.0.0,<3.0
+langchain-google-genai>=2.0.0,<5.0
 google-genai>=1.0.0
 
 # --- Utilities ---
 python-dotenv>=1.0.0
-pillow>=10.0.0
 ngrok>=1.0.0

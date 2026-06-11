@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Twitter, Linkedin, Youtube, MessageSquare, Send } from 'lucide-react'
+import { Instagram, Linkedin, Youtube, Send } from 'lucide-react'
 import { XtarzLogo } from '../ui/XtarzLogo'
+import { XTARZVA_SOCIAL } from '../../constants/social'
 
 const LINKS = [
   {
@@ -15,14 +16,14 @@ const LINKS = [
     title: 'Resources',
     items: [
       { label: 'Blog', to: '/blog' },
-      { label: 'Success stories', to: '/blog' },
-      { label: 'Tutorials', to: '/blog' },
+      { label: 'Success stories', to: '/success-stories' },
+      { label: 'Tutorials', to: '/tutorials' },
     ],
   },
   {
     title: 'Company',
     items: [
-      { label: 'About', to: '/about' },
+      { label: 'About', to: '/#about' },
       { label: 'Careers', to: '/careers', badge: '2' },
       { label: 'Contact us', to: '/contact' },
     ],
@@ -37,7 +38,11 @@ const LINKS = [
   },
 ]
 
-const SOCIALS = [Twitter, Linkedin, Youtube, MessageSquare]
+const SOCIALS = [
+  { icon: Instagram, href: XTARZVA_SOCIAL.instagram, label: 'XtarzVA on Instagram' },
+  { icon: Youtube, href: XTARZVA_SOCIAL.youtube, label: 'XtarzVA on YouTube' },
+  { icon: Linkedin, href: XTARZVA_SOCIAL.linkedin, label: 'XtarzVA on LinkedIn' },
+] as const
 
 export default function Footer() {
   return (
@@ -84,7 +89,7 @@ export default function Footer() {
                   <li key={item.label}>
                     <Link
                       to={item.to}
-                      className="text-sm text-landing-secondary hover:text-landing-primary transition-colors flex items-center gap-2"
+                      className="text-sm text-landing-secondary hover:text-landing-accent transition-colors flex items-center gap-2"
                     >
                       {item.label}
                       {'badge' in item && item.badge && (
@@ -116,11 +121,19 @@ export default function Footer() {
             . All rights reserved.
           </p>
 
-          <div className="flex items-center gap-5">
-            {SOCIALS.map((Icon, i) => (
-              <Link key={i} to="#" className="text-landing-muted hover:text-landing-primary transition-colors" aria-label="Social link">
+          <div className="flex items-center gap-4">
+            {SOCIALS.map(({ icon: Icon, href, label }) => (
+              <a
+                key={href}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-xl bg-landing-elevated border border-landing-divider flex items-center justify-center text-landing-muted hover:text-landing-accent hover:border-landing-accent/30 transition-all"
+                aria-label={label}
+                title={label}
+              >
                 <Icon className="w-4 h-4" strokeWidth={1.5} />
-              </Link>
+              </a>
             ))}
           </div>
 

@@ -122,7 +122,7 @@ export default function OverviewPage() {
     <div className="max-w-[1400px] mx-auto space-y-8 pb-24">
       <div className="space-y-2 mb-8">
         <h1 className="text-3xl font-black text-white tracking-tight">
-          {hasRuns ? 'Your Commerce Dashboard' : 'Welcome to Xtarz'}
+          {hasRuns ? 'Your Commerce Dashboard' : 'Welcome to XtarzVA'}
         </h1>
         <p className="text-sm text-landing-secondary">
           {hasRuns
