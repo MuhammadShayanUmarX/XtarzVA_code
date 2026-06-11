@@ -76,7 +76,16 @@ export default function AboutSection() {
               Most sellers lose weeks jumping between trend tools, supplier sites, competitor tabs, and Canva — then still launch with unclear margins. XtarzVA was built to close that gap.
             </p>
             <p>
-              Born from years of work at XtarzLab, the platform turns fragmented research into a single workflow: discover, compare, source, create, and build. You get evidence-backed decisions and launch assets, not another generic dashboard.
+              Born from years of work at{' '}
+              <a
+                href="https://xtarzlab.site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-landing-accent hover:text-landing-accentSoft transition-colors font-medium underline underline-offset-2"
+              >
+                XtarzLab
+              </a>
+              , the platform turns fragmented research into a single workflow: discover, compare, source, create, and build. You get evidence-backed decisions and launch assets, not another generic dashboard.
             </p>
           </div>
         </div>
@@ -87,20 +96,30 @@ export default function AboutSection() {
             <div className="w-40 h-40 rounded-full overflow-hidden mb-5 border-2 border-landing-accent/40 ring-4 ring-landing-accent/10">
               <img
                 src="/founder_image.png"
-                alt="Muhammad Shayan Umar — Founder of XtarzVA"
+                alt="Muhammad Shayan Umar — Founder & CEO of XtarzVA"
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
             </div>
             <h3 className="text-lg font-semibold text-landing-primary">Muhammad Shayan Umar</h3>
-            <p className="text-sm text-landing-accent mt-1">Founder & Lead Architect</p>
-            <p className="text-xs text-landing-muted mt-1">Islamabad, Pakistan · XtarzLab</p>
+            <p className="text-sm text-landing-accent mt-1">Founder & CEO · Lead Engineer</p>
+            <p className="text-xs text-landing-muted mt-1">
+              XtarzVA ·{' '}
+              <a
+                href="https://xtarzlab.site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-landing-accent hover:text-landing-accentSoft transition-colors underline underline-offset-2"
+              >
+                XtarzLab
+              </a>
+            </p>
             <div className="flex flex-wrap justify-center gap-2 mt-4">
               <span className="text-xs px-2.5 py-1 rounded-md bg-landing-elevated border border-landing-divider text-landing-secondary">
-                AI/ML Engineer
+                Founder & CEO
               </span>
               <span className="text-xs px-2.5 py-1 rounded-md bg-landing-elevated border border-landing-divider text-landing-secondary">
-                Commerce systems
+                Lead Engineer
               </span>
             </div>
             <a
@@ -118,10 +137,19 @@ export default function AboutSection() {
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-landing-primary">About the founder</h3>
               <p className="text-sm text-landing-secondary leading-relaxed">
-                Shayan builds products where technical depth meets merchant outcomes. His focus is practical systems — research pipelines, structured outputs, and workflows that save sellers real hours.
+                Shayan is Founder & CEO and Lead Engineer at XtarzVA — building products where technical depth meets merchant outcomes. His focus is practical systems: research pipelines, structured outputs, and workflows that save sellers real hours.
               </p>
               <p className="text-sm text-landing-secondary leading-relaxed">
-                Through XtarzLab he has shipped agentic commerce tooling, LLM-powered research flows, and automation for brands that need speed without sacrificing decision quality.
+                He is also Founder & CEO of{' '}
+                <a
+                  href="https://xtarzlab.site"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-landing-accent hover:text-landing-accentSoft transition-colors font-medium underline underline-offset-2"
+                >
+                  XtarzLab
+                </a>
+                , where he has shipped agentic commerce tooling, LLM-powered research flows, and automation for brands that need speed without sacrificing decision quality.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-6 border-t border-landing-divider">

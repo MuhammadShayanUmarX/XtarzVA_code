@@ -1,41 +1,57 @@
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Zap, TrendingUp, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Zap, TrendingUp, CheckCircle2, Clock } from 'lucide-react'
 import { XtarzLogo } from '../components/ui/XtarzLogo'
 import Navbar from '../components/landing/Navbar'
 import AboutSection from '../components/landing/AboutSection'
 import Footer from '../components/landing/Footer'
 
-// Shared page shell for simple info pages
+// Shared page shell — Obsidian + Copper (aligned with landing)
 export function PageShell({ children, label, title, subtitle }: {
   children: React.ReactNode, label: string, title: React.ReactNode, subtitle: string
 }) {
   return (
-    <div className="min-h-screen bg-brand-950 text-brand-50 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-[700px] h-[400px] bg-accent-primary/[0.05] blur-[140px] rounded-full" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[400px] bg-accent-violet/[0.04] blur-[120px] rounded-full" />
-      </div>
-      <div className="absolute inset-0 opacity-[0.018] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '44px 44px' }} />
-
-      <header className="fixed top-0 left-0 right-0 z-[100] h-16 flex items-center px-6 border-b border-white/[0.05] bg-brand-950/80 backdrop-blur-xl">
-        <Link to="/" className="flex items-center gap-2 text-brand-400 hover:text-brand-50 transition-colors text-sm font-medium">
-          <ArrowLeft className="w-4 h-4" /> Back to XtarzVA
+    <div className="min-h-screen bg-landing-bg text-landing-primary relative overflow-hidden">
+      <header className="fixed top-0 left-0 right-0 z-[100] h-16 flex items-center px-6 border-b border-landing-divider bg-landing-bg/90 backdrop-blur-xl">
+        <Link to="/" className="flex items-center gap-2 text-landing-secondary hover:text-landing-primary transition-colors text-sm font-medium">
+          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} /> Back to XtarzVA
         </Link>
         <Link to="/" className="ml-6">
-          <XtarzLogo markClassName="w-6 h-6" textClassName="text-sm font-bold text-brand-50" />
+          <XtarzLogo markClassName="w-6 h-6" textClassName="text-sm font-semibold text-landing-primary" />
         </Link>
       </header>
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 pt-32 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-14 text-center">
-          <span className="section-label block mb-4">{label}</span>
-          <h1 className="text-4xl md:text-5xl font-black text-brand-50 tracking-tighter leading-tight mb-4">{title}</h1>
-          <p className="text-lg text-brand-400 max-w-xl mx-auto">{subtitle}</p>
+          <span className="section-eyebrow block mb-4 uppercase tracking-widest text-xs">{label}</span>
+          <h1 className="text-4xl md:text-5xl font-semibold text-landing-primary tracking-tight leading-tight mb-4">{title}</h1>
+          <p className="text-lg text-landing-secondary max-w-xl mx-auto">{subtitle}</p>
         </motion.div>
         {children}
       </div>
     </div>
+  )
+}
+
+function ComingSoonContent({ title }: { title: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="landing-card p-12 md:p-16 text-center max-w-lg mx-auto"
+    >
+      <div className="w-16 h-16 rounded-2xl bg-landing-accent/10 border border-landing-accent/20 flex items-center justify-center text-landing-accent mx-auto mb-6">
+        <Clock className="w-8 h-8" strokeWidth={1.5} />
+      </div>
+      <h2 className="text-2xl font-semibold text-landing-primary mb-3">Coming soon</h2>
+      <p className="text-sm text-landing-secondary leading-relaxed mb-8">
+        {title} is on the way. We&apos;re building guides, stories, and tutorials for XtarzVA sellers — check back soon.
+      </p>
+      <Link to="/" className="btn-proper-primary inline-flex items-center gap-2 text-sm">
+        Back to home
+        <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+      </Link>
+    </motion.div>
   )
 }
 
@@ -141,33 +157,27 @@ export function AboutPage() {
   )
 }
 
-// ── Blog (placeholder) ───────────────────────────────────────────────────────
+// ── Resources (coming soon) ─────────────────────────────────────────────────
 export function BlogPage() {
-  const posts = [
-    { title: 'How to find $10K/month products on TikTok before they peak', date: 'Apr 22, 2025', tag: 'Strategy', readTime: '6 min' },
-    { title: 'The 35% margin rule: why most dropshippers quit before they win', date: 'Apr 18, 2025', tag: 'Profit', readTime: '5 min' },
-    { title: "AI vs manual research: we ran both for 30 days and here's the data", date: 'Apr 14, 2025', tag: 'Research', readTime: '8 min' },
-    { title: 'Shopify SEO in 2025: what the algorithm rewards and what it penalizes', date: 'Apr 10, 2025', tag: 'SEO', readTime: '7 min' },
-    { title: 'Why AliExpress order velocity is the most underrated trend signal', date: 'Apr 5, 2025', tag: 'Research', readTime: '4 min' },
-    { title: 'Case study: How a solo seller scaled to $44K/mo using XtarzVA in 60 days', date: 'Apr 1, 2025', tag: 'Case Study', readTime: '10 min' },
-  ]
   return (
-    <PageShell label="Blog" title={<>Insights for <span className="gradient-text">Shopify sellers.</span></>} subtitle="Strategy, research, and data-driven insights to help you build a winning product catalog.">
-      <div className="space-y-4">
-        {posts.map((post, i) => (
-          <motion.div key={post.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-            className="flex items-start gap-4 p-5 rounded-2xl border border-white/[0.07] bg-brand-800/30 hover:bg-brand-800/50 transition-all group cursor-pointer">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-accent-primary/10 text-accent-primary border border-accent-primary/20 uppercase tracking-wider">{post.tag}</span>
-                <span className="text-[11px] text-brand-600">{post.readTime} read</span>
-              </div>
-              <h3 className="text-sm font-black text-brand-50 group-hover:text-accent-primary transition-colors leading-snug">{post.title}</h3>
-              <p className="text-xs text-brand-600 mt-1">{post.date}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+    <PageShell label="Resources" title={<>Blog</>} subtitle="Seller insights and product research strategies.">
+      <ComingSoonContent title="Our blog" />
+    </PageShell>
+  )
+}
+
+export function SuccessStoriesPage() {
+  return (
+    <PageShell label="Resources" title={<>Success stories</>} subtitle="Real merchants, real results with XtarzVA.">
+      <ComingSoonContent title="Success stories" />
+    </PageShell>
+  )
+}
+
+export function TutorialsPage() {
+  return (
+    <PageShell label="Resources" title={<>Tutorials</>} subtitle="Step-by-step guides for every XtarzVA workflow.">
+      <ComingSoonContent title="Tutorials" />
     </PageShell>
   )
 }

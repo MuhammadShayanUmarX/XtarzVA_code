@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion'
 import { PageShell } from './InfoPages'
 
+const LEGAL_CARD = 'landing-card p-8'
+
 export default function TermsOfService() {
   const sections = [
     { title: '1. Agreement to Terms', content: 'By accessing or using XtarzVA, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the Service.' },
@@ -10,17 +12,22 @@ export default function TermsOfService() {
   ]
 
   return (
-    <PageShell 
-      label="Legal" 
-      title={<>Terms of <span className="gradient-text">Service.</span></>} 
+    <PageShell
+      label="Legal"
+      title={<>Terms of <span className="gradient-text">Service</span></>}
       subtitle={`Last updated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`}
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         {sections.map((section, i) => (
-          <motion.div key={section.title} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className="p-8 rounded-2xl border border-white/[0.07] bg-brand-800/30">
-            <h2 className="text-xl font-black text-white mb-4">{section.title}</h2>
-            <p className="text-brand-400 leading-relaxed text-sm">{section.content}</p>
+          <motion.div
+            key={section.title}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08 }}
+            className={LEGAL_CARD}
+          >
+            <h2 className="text-lg font-semibold text-landing-primary mb-3">{section.title}</h2>
+            <p className="text-landing-secondary leading-relaxed text-sm">{section.content}</p>
           </motion.div>
         ))}
       </div>

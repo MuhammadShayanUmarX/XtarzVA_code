@@ -24,6 +24,8 @@ const FeaturesPage = lazy(() => import('./pages/InfoPages').then(m => ({ default
 const PricingPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.PricingPage })))
 const AboutPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.AboutPage })))
 const BlogPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.BlogPage })))
+const SuccessStoriesPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.SuccessStoriesPage })))
+const TutorialsPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.TutorialsPage })))
 const CareersPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.CareersPage })))
 const ChangelogPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.ChangelogPage })))
 const RoadmapPage = lazy(() => import('./pages/InfoPages').then(m => ({ default: m.RoadmapPage })))
@@ -115,6 +117,8 @@ export default function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/blog" element={<BlogPage />} />
+          <Route path="/success-stories" element={<SuccessStoriesPage />} />
+          <Route path="/tutorials" element={<TutorialsPage />} />
           <Route path="/careers" element={<CareersPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/roadmap" element={<RoadmapPage />} />
