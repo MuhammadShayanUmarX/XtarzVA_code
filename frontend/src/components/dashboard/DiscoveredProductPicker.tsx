@@ -62,14 +62,11 @@ export default function DiscoveredProductPicker({
       query: extraInitialInput.query || productName,
     }
     try {
-      const useImportEndpoint = targetStage === 'competitor_intelligence' || targetStage === 'product_sourcing'
-      const res = useImportEndpoint
-        ? await api.post('/v2/runs/import', { source_run_id: sourceRunId, target_stage: targetStage, initial_input })
-        : await api.post('/v2/runs/standalone', {
-            stage: targetStage,
-            source_run_id: sourceRunId,
-            initial_input,
-          })
+      const res = await api.post('/v2/runs/import', { 
+        source_run_id: sourceRunId, 
+        target_stage: targetStage, 
+        initial_input 
+      })
       toast.success(`Starting ${STAGE_LABELS[targetStage]}...`)
       navigate(`/dashboard/workflow?run_id=${res.data.run_id}&standalone=true`)
     } catch (err: any) {

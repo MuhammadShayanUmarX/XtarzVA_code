@@ -41,6 +41,8 @@ STAGE_LABELS = {
 IMPORTABLE_AGENTS = {
     EngineStage.COMPETITOR_INTELLIGENCE.value,
     EngineStage.PRODUCT_SOURCING.value,
+    EngineStage.META_ADS_SPY.value,
+    EngineStage.COMMERCE_CREATION.value,
 }
 
 STAGE_PREREQUISITES = {

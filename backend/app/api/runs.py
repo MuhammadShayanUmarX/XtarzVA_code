@@ -162,8 +162,8 @@ async def list_discovered_products(
     """Products from completed Product Discovery runs, for import UI."""
     query = (
         select(Run)
-        .where(Run.agent == EngineStage.PRODUCT_INTELLIGENCE.value)
         .order_by(Run.created_at.desc())
+        .limit(100)
     )
     if current_user:
         query = query.where(Run.user_id == current_user.id)
