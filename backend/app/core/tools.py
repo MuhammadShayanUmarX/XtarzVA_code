@@ -20,9 +20,7 @@ class ResearchTools:
         self.cj_access_token = None
 
         integrations = {
-            "google": bool(settings.GOOGLE_API_KEY),
-            "gemini": bool(settings.GOOGLE_API_KEY),
-            "imagen": bool(settings.GOOGLE_API_KEY),
+            "groq": bool(settings.GROQ_API_KEY),
             "tavily": bool(self.tavily_client),
             "apify": bool(self.apify_client),
             "firecrawl": bool(self.firecrawl_app),
@@ -444,35 +442,9 @@ class ResearchTools:
             return []
 
     async def generate_image_imagen(self, prompt: str) -> Optional[bytes]:
-        """Generate an image via Google Imagen. Returns JPEG/PNG bytes or None."""
-        if not settings.GOOGLE_API_KEY:
-            logger.warning("GOOGLE_API_KEY not configured. Skipping Imagen generation.")
-            return None
-        try:
-            from google import genai
-            from google.genai import types
-
-            client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-
-            def _generate() -> Optional[bytes]:
-                response = client.models.generate_images(
-                    model=settings.IMAGEN_MODEL,
-                    prompt=prompt,
-                    config=types.GenerateImagesConfig(
-                        number_of_images=1,
-                        output_mime_type="image/jpeg",
-                    ),
-                )
-                if response.generated_images:
-                    img = response.generated_images[0].image
-                    if img and img.image_bytes:
-                        return img.image_bytes
-                return None
-
-            return await asyncio.to_thread(_generate)
-        except Exception as e:
-            logger.error(f"Imagen generation failed: {e}")
-            return None
+        """Image generation via Imagen is disabled (no Google API key configured)."""
+        logger.warning("Imagen generation is disabled. No Google API key configured.")
+        return None
 
     @staticmethod
     def image_bytes_to_data_url(image_bytes: bytes, mime: str = "image/jpeg") -> str:

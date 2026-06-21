@@ -184,6 +184,19 @@ async def list_discovered_products(
     return products
 
 
+@router.get("/{run_id}/poll")
+async def poll_run(run_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        runner = await get_or_create_runner(run_id, db)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Run not found")
+    
+    return {
+        "state": runner.state.model_dump(),
+        "logs": runner.recent_logs
+    }
+
+
 @router.get("/{run_id}/stream")
 async def stream_run(run_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     try:

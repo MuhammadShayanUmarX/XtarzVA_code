@@ -34,12 +34,16 @@ async def startup_event():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    from dotenv import load_dotenv
+    load_dotenv()
+
     if os.getenv("NGROK_AUTHTOKEN"):
         try:
             import ngrok
-            from dotenv import load_dotenv
-            load_dotenv()
             listener = await ngrok.forward(8000, authtoken=os.getenv("NGROK_AUTHTOKEN"))
+            print(f"\n=======================================================")
+            print(f"✅ NGROK TUNNEL ACTIVE: {listener.url()}")
+            print(f"=======================================================\n")
             logger.info(f"Ngrok tunnel: {listener.url()}")
         except Exception as e:
             logger.error(f"Ngrok failed: {e}")

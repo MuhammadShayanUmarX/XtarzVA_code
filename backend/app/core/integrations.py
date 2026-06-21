@@ -3,32 +3,30 @@ from ..models.schemas import EngineStage
 
 AGENT_INTEGRATIONS = {
     EngineStage.PRODUCT_INTELLIGENCE.value: {
-        "llm": ["langchain", "gemini"],
+        "llm": ["langchain", "groq"],
         "research": ["tavily", "apify", "firecrawl", "serpapi"],
     },
     EngineStage.COMPETITOR_INTELLIGENCE.value: {
-        "llm": ["langchain", "gemini"],
+        "llm": ["langchain", "groq"],
         "research": ["serpapi", "tavily", "apify", "firecrawl", "geekflare"],
     },
     EngineStage.PRODUCT_SOURCING.value: {
-        "llm": ["langchain", "gemini"],
+        "llm": ["langchain", "groq"],
         "research": ["tavily", "firecrawl", "cj_dropshipping"],
     },
     EngineStage.META_ADS_SPY.value: {
-        "llm": ["langchain", "gemini"],
+        "llm": ["langchain", "groq"],
         "research": ["serpapi", "tavily", "unsplash", "imagen"],
     },
     EngineStage.COMMERCE_CREATION.value: {
-        "llm": ["langchain", "gemini"],
+        "llm": ["langchain", "groq"],
         "research": ["imagen", "unsplash"],
     },
 }
 
 INTEGRATION_ENV_MAP = {
-    "langchain": "GOOGLE_API_KEY",
-    "gemini": "GOOGLE_API_KEY",
-    "imagen": "GOOGLE_API_KEY",
-    "google": "GOOGLE_API_KEY",
+    "langchain": "GROQ_API_KEY",
+    "groq": "GROQ_API_KEY",
     "tavily": "TAVILY_API_KEY",
     "apify": "APIFY_API_KEY",
     "firecrawl": "FIRECRAWL_API_KEY",

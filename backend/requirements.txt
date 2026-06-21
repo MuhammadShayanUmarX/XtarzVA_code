@@ -31,11 +31,10 @@ apify-client>=1.6.0
 tavily-python>=0.3.0
 firecrawl-py>=1.0.0
 
-# --- LLM & agents (LangChain + Google Gemini text + Imagen images) ---
+# --- LLM & agents (LangChain + Groq) ---
 langchain>=0.3.0,<2.0
 langchain-core>=0.3.0,<2.0
-langchain-google-genai>=2.0.0,<5.0
-google-genai>=1.0.0
+langchain-groq>=0.2.0
 
 # --- Utilities ---
 python-dotenv>=1.0.0

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { RunStreamClient, AgentUpdateEvent, StateUpdateEvent, RunCompleteEvent, QualityWarningEvent, RunErrorEvent } from '../lib/runStream';
-import { tokenStorage } from '../lib/storage';
+import api from '../lib/api';
 
 export interface AgentState {
   agent_id: string;
@@ -29,7 +28,6 @@ interface RunStore {
   agentStates: Record<string, AgentState>;
   engineData: Record<string, any>;
   logs: LogEntry[];
-  streamClient: RunStreamClient | null;
 
   // Actions
   startRun: (config: any) => Promise<string>;
@@ -52,76 +50,63 @@ export const useRunStore = create<RunStore>((set, get) => ({
   agentStates: {},
   engineData: {},
   logs: [],
-  streamClient: null,
 
   startRun: async (config) => {
-    const res = await fetch('/api/v2/runs/', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tokenStorage.getAccessToken() || ''}`
-      },
-      body: JSON.stringify(config)
-    });
-    const data = await res.json();
+    const res = await api.post('/v2/runs/', config);
+    const data = res.data;
     set({ activeRunId: data.run_id, activeRunStatus: 'queued', pendingApproval: false, currentStage: '', agentStates: {}, engineData: {}, logs: [] });
     return data.run_id;
   },
 
   connectToStream: (runId) => {
-    // Disconnect existing stream first to prevent duplicate connections
-    const existingClient = get().streamClient;
-    if (existingClient) {
-      existingClient.disconnect();
-    }
+    // Disconnect existing poll first
+    get().disconnectFromStream();
     
-    const client = new RunStreamClient(runId);
+    let lastLogCount = 0;
     
-    client.connect({
-      onAgentUpdate: (event) => {
-        get().updateAgentState(event.agent_id, {
-          status: event.status as any,
-          sub_task: event.sub_task,
-          progress_pct: event.progress_pct,
-          confidence_score: event.confidence_score,
-          llm_provider_used: event.llm_provider_used,
-          timestamp: event.timestamp
-        });
+    // Initial fetch
+    const poll = async () => {
+      try {
+        const res = await api.get(`/v2/runs/${runId}/poll`);
+        const data = res.data;
         
-        get().addLogEntry({
-          id: Math.random().toString(36).substr(2, 9),
-          agent_id: event.agent_id,
-          message: event.sub_task || `Agent ${event.agent_id} is ${event.status}`,
-          level: event.status === 'failed' ? 'error' : (event.status === 'done' ? 'success' : 'info'),
-          timestamp: event.timestamp
-        });
-      },
-      onStateUpdate: (event) => {
-        const prevStage = get().currentStage;
-        const newStage = event.current_stage;
-
-        // When a standalone run completes, mark the current agent as done
-        if (event.status === 'completed' && newStage) {
-          get().updateAgentState(newStage, {
-            status: 'done',
-            progress_pct: 100,
-            timestamp: new Date().toISOString()
+        // Process logs — only update if new logs arrived
+        if (data.logs && data.logs.length > 0 && data.logs.length !== lastLogCount) {
+          lastLogCount = data.logs.length;
+          const logs = data.logs;
+          
+          // Update agent states from the latest log entries
+          logs.forEach((log: any) => {
+            get().updateAgentState(log.agent_id, {
+              status: log.status,
+              sub_task: log.message,
+              progress_pct: log.progress_pct,
+              confidence_score: log.confidence_score,
+              llm_provider_used: log.llm_provider_used,
+              timestamp: log.timestamp
+            });
           });
+          
+          set({ logs: logs.map((l: any) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            agent_id: l.agent_id,
+            message: l.message,
+            level: l.level,
+            timestamp: l.timestamp
+          })).reverse() });
         }
-
-        // When the backend says pending_approval=true, that means the current agent
-        // has finished its work. Mark that agent as "done" so the frontend shows the report.
-        if (event.pending_approval && newStage) {
-          get().updateAgentState(newStage, {
-            status: 'done',
-            progress_pct: 100,
-            timestamp: new Date().toISOString()
-          });
+        
+        // Process state
+        const state = data.state;
+        const newStage = state.current_stage;
+        
+        if (state.status === 'completed' && newStage) {
+          get().updateAgentState(newStage, { status: 'done', progress_pct: 100, timestamp: new Date().toISOString() });
         }
-
-        // When approval is cleared (pending_approval=false) and status is running,
-        // mark the current stage agent as 'running' to transition from report → spinner
-        if (!event.pending_approval && event.status === 'running' && newStage) {
+        if (state.pending_approval && newStage) {
+          get().updateAgentState(newStage, { status: 'done', progress_pct: 100, timestamp: new Date().toISOString() });
+        }
+        if (!state.pending_approval && state.status === 'running' && newStage) {
           get().updateAgentState(newStage, {
             status: 'running',
             progress_pct: 0,
@@ -129,43 +114,39 @@ export const useRunStore = create<RunStore>((set, get) => ({
             timestamp: new Date().toISOString()
           });
         }
-
-        if (event.status === 'failed' && newStage) {
+        if (state.status === 'failed' && newStage) {
           get().updateAgentState(newStage, {
             status: 'failed',
-            sub_task: event.engine_data?.last_error || 'Agent run failed',
+            sub_task: state.engine_data?.last_error || 'Agent run failed',
             timestamp: new Date().toISOString()
           });
         }
 
         set({ 
-          activeRunStatus: event.status,
-          pendingApproval: event.pending_approval,
+          activeRunStatus: state.status,
+          pendingApproval: state.pending_approval,
           currentStage: newStage,
-          engineData: event.engine_data 
+          engineData: state.engine_data 
         });
-      },
-      onRunComplete: (event) => {
-        set({ activeRunStatus: 'completed' });
-        console.info('Run completed successfully', event);
-      },
-      onQualityWarning: (event) => {
-        console.warn('Quality warnings received', event.issues);
-      },
-      onError: (event) => {
-        set({ activeRunStatus: 'failed' });
-        console.error('Run failed', event.error);
-      }
-    });
 
-    set({ streamClient: client, activeRunId: runId });
+        if (state.status === 'completed' || state.status === 'failed' || state.status === 'cancelled') {
+          get().disconnectFromStream();
+        }
+      } catch (err) {
+        console.warn('Poll error:', err);
+      }
+    };
+    
+    poll();
+    // Use interval in global window so we can clear it
+    (window as any).runPollInterval = setInterval(poll, 2000);
+    set({ activeRunId: runId });
   },
 
   disconnectFromStream: () => {
-    const { streamClient } = get();
-    if (streamClient) {
-      streamClient.disconnect();
-      set({ streamClient: null });
+    if ((window as any).runPollInterval) {
+      clearInterval((window as any).runPollInterval);
+      (window as any).runPollInterval = null;
     }
   },
 
@@ -196,32 +177,17 @@ export const useRunStore = create<RunStore>((set, get) => ({
   },
 
   pauseRun: async (runId) => {
-    await fetch(`/api/v2/runs/${runId}/pause`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${tokenStorage.getAccessToken() || ''}`
-      }
-    });
+    await api.post(`/v2/runs/${runId}/pause`);
   },
   
   approveRun: async (runId) => {
-    await fetch(`/api/v2/runs/${runId}/approve`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${tokenStorage.getAccessToken() || ''}`
-      }
-    });
+    await api.post(`/v2/runs/${runId}/approve`);
     // Immediately clear pendingApproval on the frontend so the UI resets to "running"
     set({ pendingApproval: false });
   },
 
   cancelRun: async (runId) => {
-    await fetch(`/api/v2/runs/${runId}/cancel`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${tokenStorage.getAccessToken() || ''}`
-      }
-    });
+    await api.post(`/v2/runs/${runId}/cancel`);
     get().disconnectFromStream();
     set({ activeRunId: null, activeRunStatus: 'cancelled' });
   },

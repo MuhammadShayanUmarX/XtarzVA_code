@@ -76,6 +76,7 @@ class AgentRunner:
         self.db = db
         self._consumers: List[asyncio.Queue] = []
         self.lock = asyncio.Lock()
+        self.recent_logs = []
         self.state = WorkflowState(
             status="stopped",
             current_stage="",
@@ -125,6 +126,10 @@ class AgentRunner:
             logger.error(message)
         else:
             logger.info(message)
+
+        self.recent_logs.append(log_data)
+        if len(self.recent_logs) > 100:
+            self.recent_logs.pop(0)
 
         await self._broadcast({"event": "agent_update", "data": log_data})
 
@@ -383,6 +388,7 @@ class AgentRunner:
         except Exception as e:
             await self.log_and_stream(f"{label} failed: {str(e)}", level="error", stage=stage)
             self.state.status = "failed"
+            self.state.engine_data["last_error"] = str(e)
             await self._update_db_state()
 
     async def _execute_competitor_intelligence(self):

@@ -311,7 +311,7 @@ class CommerceCreationEngine:
             CommerceCreationOutput,
             "system_run",
             temperature=llm_cfg.get("temperature", 0.45),
-            model_name=settings.GEMINI_THEME_MODEL,
+            model_name=getattr(settings, "GEMINI_THEME_MODEL", settings.GROQ_MODEL),
         )
 
         output = self._enrich_output(output, product_data.product_name, sourcing_data, meta_ads_data)

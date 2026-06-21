@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Type, Tuple
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from pydantic import BaseModel
 
 from ..config import settings
@@ -23,14 +23,15 @@ def _build_system_prompt(agent_id: str, task_prompt: str) -> str:
     )
 
 
-def _get_chat_model(temperature: float = 0.3, model_name: Optional[str] = None) -> ChatGoogleGenerativeAI:
-    if not settings.GOOGLE_API_KEY:
-        raise RuntimeError("GOOGLE_API_KEY is not configured.")
-    return ChatGoogleGenerativeAI(
-        google_api_key=settings.GOOGLE_API_KEY,
-        model=model_name or settings.GEMINI_STRUCTURED_MODEL,
+def _get_chat_model(temperature: float = 0.3, model_name: Optional[str] = None) -> ChatGroq:
+    if not settings.GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY is not configured.")
+    return ChatGroq(
+        api_key=settings.GROQ_API_KEY,
+        model=model_name or settings.GROQ_MODEL,
         temperature=temperature,
     )
+
 
 
 async def invoke_structured_agent(
@@ -43,7 +44,7 @@ async def invoke_structured_agent(
     model_name: Optional[str] = None,
 ) -> Tuple[BaseModel, str]:
     """Run a LangChain agent with structured JSON output (Pydantic schema)."""
-    resolved_model = model_name or settings.GEMINI_STRUCTURED_MODEL
+    resolved_model = model_name or settings.GROQ_MODEL
     llm = _get_chat_model(temperature, model_name=resolved_model)
     structured_llm = llm.with_structured_output(output_model, method="json_mode")
     system_content = _build_system_prompt(agent_id, task_prompt)
@@ -59,4 +60,4 @@ async def invoke_structured_agent(
             HumanMessage(content=user_message),
         ]
     )
-    return result, "langchain-gemini"
+    return result, "langchain-groq"

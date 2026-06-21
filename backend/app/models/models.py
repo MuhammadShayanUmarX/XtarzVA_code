@@ -16,7 +16,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    hashed_password: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    password: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String)
     plan: Mapped[str] = mapped_column(String, default="starter")
     is_onboarded: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -4,7 +4,7 @@
   "max_prompt_chars": 8000,
   "llm": {
     "temperature": 0.45,
-    "model_setting": "GEMINI_THEME_MODEL"
+    "model_setting": "GROQ_MODEL"
   },
   "system_template": "You are a senior Shopify theme art director for eight-figure DTC brands.\nBrand tone: {tone}. Visual direction: {aesthetic}\n\n{rules}\n\n{section_schema}\n\n{output_schema}",
   "fragments": {

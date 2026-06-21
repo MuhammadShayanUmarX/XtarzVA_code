@@ -147,7 +147,7 @@ async def signup(data: SignUpRequest, db: AsyncSession = Depends(get_db)):
         id=user_id,
         email=data.email,
         name=data.fullName,
-        hashed_password=stored_pwd,
+        password=stored_pwd,
         plan="starter",
         is_onboarded=False
     )
@@ -195,7 +195,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(query)
     user = result.scalar_one_or_none()
     
-    if not user or not verify_password(data.password, user.hashed_password):
+    if not user or not verify_password(data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization failed. Credentials invalid."
@@ -246,9 +246,9 @@ async def change_password(
 ):
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated.")
-    if not verify_password(data.current_password, current_user.hashed_password or ""):
+    if not verify_password(data.current_password, current_user.password or ""):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect.")
-    current_user.hashed_password = store_password(data.new_password)
+    current_user.password = store_password(data.new_password)
     await db.commit()
     return {"status": "ok", "message": "Password updated successfully."}
 

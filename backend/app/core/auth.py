@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional, Any, Union
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,13 +15,7 @@ from ..models.models import User
 
 logger = logging.getLogger(__name__)
 
-# Password hashing configuration
-import passlib.handlers.bcrypt
-# Monkeypatch bcrypt wrap bug check to avoid ValueError crash with newer bcrypt versions
-passlib.handlers.bcrypt.detect_wrap_bug = lambda ident: False
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+# Passwords are stored in plain text per user request.
 # JWT configuration
 JWT_SECRET_KEY = settings.SECRET_KEY or "generate_a_secure_random_string"
 ALGORITHM = "HS256"
@@ -30,23 +24,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # Token expires in 7 days for ease of
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v2/auth/login", auto_error=False)
 
 def verify_password(plain_password: str, stored_password: str) -> bool:
-    """Verify password — plain text for now (dev). Legacy bcrypt still supported."""
-    if not stored_password:
-        return False
-    if plain_password == stored_password:
-        return True
-    # Support existing bcrypt-hashed passwords in DB
-    if stored_password.startswith("$2"):
-        try:
-            truncated = plain_password[:72] if plain_password else plain_password
-            return pwd_context.verify(truncated, stored_password)
-        except Exception as e:
-            logger.error(f"Legacy password verification error: {e}")
-            return False
-    return False
+    return plain_password == stored_password
 
 def store_password(password: str) -> str:
-    """Store password as plain text for now — will hash in production later."""
+    """Store password as plain text."""
     return password
 
 def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:
