@@ -9,6 +9,7 @@ import { AreaChart, Area, ResponsiveContainer } from 'recharts'
 import { cn } from '../../lib/utils'
 import { StaggerContainer, staggerItem } from '../../components/ui/LoadingStates'
 import api from '../../lib/api'
+import RunsHistoryList from '../../components/dashboard/RunsHistoryList'
 
 interface OverviewStats {
   total_runs: number
@@ -170,63 +171,69 @@ export default function OverviewPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 glass-panel p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-landing-primary tracking-tight">Recent Activity</h3>
-              <Link to="/dashboard/runs" className="text-xs font-bold text-landing-accent hover:text-white flex items-center gap-1">
-                View all <ChevronRight size={14} />
-              </Link>
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 glass-panel p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-landing-primary tracking-tight">Recent Activity</h3>
+                <Link to="/dashboard/runs" className="text-xs font-bold text-landing-accent hover:text-white flex items-center gap-1">
+                  View all <ChevronRight size={14} />
+                </Link>
+              </div>
+              {s.recent_runs.length === 0 ? (
+                <p className="text-sm text-landing-muted">No recent scans yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {s.recent_runs.map(run => (
+                    <button
+                      key={run.id}
+                      onClick={() => navigate(`/dashboard/workflow?run_id=${run.id}`)}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-landing-surface border border-landing-divider hover:border-landing-accent/30 transition-all text-left group"
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <p className="text-sm font-bold text-landing-primary truncate group-hover:text-white">{run.query || run.name}</p>
+                        <p className="text-[10px] text-landing-muted font-bold capitalize">{run.current_stage?.replace(/_/g, ' ') || 'Scan'}</p>
+                      </div>
+                      <span className={cn('px-2.5 py-1 rounded-lg text-[10px] font-black border capitalize shrink-0', statusBadge(run.status))}>
+                        {run.status}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            {s.recent_runs.length === 0 ? (
-              <p className="text-sm text-landing-muted">No recent scans yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {s.recent_runs.map(run => (
-                  <button
-                    key={run.id}
-                    onClick={() => navigate(`/dashboard/workflow?run_id=${run.id}`)}
-                    className="w-full flex items-center justify-between p-4 rounded-xl bg-landing-surface border border-landing-divider hover:border-landing-accent/30 transition-all text-left group"
+
+            <div className="glass-panel p-8 space-y-6">
+              <h3 className="text-lg font-black text-landing-primary tracking-tight">Quick Actions</h3>
+              <div className="space-y-2">
+                {QUICK_ACTIONS.map(action => (
+                  <Link
+                    key={action.path}
+                    to={action.path}
+                    className="flex items-center gap-4 p-4 rounded-xl bg-landing-surface border border-landing-divider hover:border-landing-accent/30 transition-all group"
                   >
-                    <div className="space-y-1 min-w-0">
-                      <p className="text-sm font-bold text-landing-primary truncate group-hover:text-white">{run.query || run.name}</p>
-                      <p className="text-[10px] text-landing-muted font-bold capitalize">{run.current_stage?.replace(/_/g, ' ') || 'Scan'}</p>
+                    <div className={cn('w-10 h-10 rounded-xl bg-landing-bg border border-landing-divider flex items-center justify-center', action.color)}>
+                      <action.icon size={18} />
                     </div>
-                    <span className={cn('px-2.5 py-1 rounded-lg text-[10px] font-black border capitalize shrink-0', statusBadge(run.status))}>
-                      {run.status}
-                    </span>
-                  </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-landing-primary group-hover:text-white">{action.label}</p>
+                      <p className="text-[10px] text-landing-muted">{action.desc}</p>
+                    </div>
+                    <ChevronRight size={16} className="text-landing-muted group-hover:text-landing-accent" />
+                  </Link>
                 ))}
               </div>
-            )}
-          </div>
-
-          <div className="glass-panel p-8 space-y-6">
-            <h3 className="text-lg font-black text-landing-primary tracking-tight">Quick Actions</h3>
-            <div className="space-y-2">
-              {QUICK_ACTIONS.map(action => (
-                <Link
-                  key={action.path}
-                  to={action.path}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-landing-surface border border-landing-divider hover:border-landing-accent/30 transition-all group"
-                >
-                  <div className={cn('w-10 h-10 rounded-xl bg-landing-bg border border-landing-divider flex items-center justify-center', action.color)}>
-                    <action.icon size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-landing-primary group-hover:text-white">{action.label}</p>
-                    <p className="text-[10px] text-landing-muted">{action.desc}</p>
-                  </div>
-                  <ChevronRight size={16} className="text-landing-muted group-hover:text-landing-accent" />
-                </Link>
-              ))}
+              <Link to="/dashboard/analytics" className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-landing-accent/10 border border-landing-accent/20 text-landing-accent text-xs font-black hover:bg-landing-accent/20 transition-all">
+                <History size={14} />
+                View Analytics
+              </Link>
             </div>
-            <Link to="/dashboard/analytics" className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-landing-accent/10 border border-landing-accent/20 text-landing-accent text-xs font-black hover:bg-landing-accent/20 transition-all">
-              <History size={14} />
-              View Analytics
-            </Link>
           </div>
-        </div>
+          
+          <div className="mt-12 pt-12 border-t border-landing-divider">
+            <RunsHistoryList maxItems={12} />
+          </div>
+        </>
       )}
 
     </div>
